@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { DocumentReference, onSnapshot, Query, DocumentData } from 'firebase/firestore'
-import { getCachedQuery, setCachedQuery, debounce } from './firebase-optimization.ts'
+import { getCachedQuery, setCachedQuery, debounce } from '../lib/firebase-optimization'
 
 interface UseOptimizedDocOptions {
   enableCache?: boolean
