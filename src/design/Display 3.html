@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,100..900;1,100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container": "#eeeeee",
+              "surface": "#f9f9f9",
+              "surface-bright": "#f9f9f9",
+              "error-container": "#ffdad6",
+              "tertiary-fixed-dim": "#71d2ff",
+              "error": "#ba1a1a",
+              "on-tertiary-container": "#002f41",
+              "on-tertiary": "#ffffff",
+              "surface-container-low": "#f3f3f3",
+              "on-background": "#1a1c1c",
+              "inverse-on-surface": "#f1f1f1",
+              "tertiary-container": "#009ece",
+              "on-primary": "#ffffff",
+              "surface-dim": "#dadada",
+              "tertiary": "#006686",
+              "on-secondary-container": "#793b22",
+              "on-tertiary-fixed": "#001e2b",
+              "on-surface-variant": "#594139",
+              "on-tertiary-fixed-variant": "#004d66",
+              "background": "#f9f9f9",
+              "primary-fixed": "#ffdbce",
+              "outline": "#8c7167",
+              "surface-tint": "#a73a00",
+              "on-surface": "#1a1c1c",
+              "on-secondary-fixed-variant": "#72361d",
+              "secondary": "#8f4c32",
+              "on-primary-container": "#521800",
+              "on-secondary": "#ffffff",
+              "surface-variant": "#e2e2e2",
+              "secondary-container": "#ffa989",
+              "secondary-fixed": "#ffdbce",
+              "on-secondary-fixed": "#370e00",
+              "inverse-surface": "#2f3131",
+              "on-primary-fixed-variant": "#802a00",
+              "surface-container-lowest": "#ffffff",
+              "primary-fixed-dim": "#ffb59a",
+              "secondary-fixed-dim": "#ffb59a",
+              "surface-container-highest": "#e2e2e2",
+              "surface-container-high": "#e8e8e8",
+              "on-primary-fixed": "#370e00",
+              "inverse-primary": "#ffb59a",
+              "primary-container": "#f1692e",
+              "primary": "#a73a00",
+              "outline-variant": "#e0c0b4",
+              "on-error": "#ffffff",
+              "on-error-container": "#93000a",
+              "tertiary-fixed": "#c0e8ff"
+            },
+            fontFamily: {
+              "headline": ["Epilogue"],
+              "body": ["Epilogue"],
+              "label": ["Epilogue"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .bg-glass {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(20px);
+      }
+      .ease-spring {
+        transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface min-h-screen selection:bg-primary-container/30">
+<header class="fixed top-0 w-full z-50 flex items-center justify-between px-6 h-16 bg-white/60 backdrop-blur-xl shadow-[0_24px_40px_rgba(26,28,28,0.06)]">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-orange-600">menu</span>
+<h1 class="font-epilogue font-bold tracking-tight italic text-xl tracking-tighter text-orange-700 italic">KAIWHAKAWĀNABE</h1>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center border-2 border-primary-container overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="modern minimalist 3D avatar profile picture of a young male with short dark hair and orange glasses on a soft grey background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5753l93GseQQkb-xQU6ZpSvl_8SkDyl9CdXp7DaJXrxo3WGNDJRII53t908rJoT2kxHK2F9vggKK5KQ7dlAmsoffvqcubxV8xLEL-fAHortIloDqfFECVFKkySQblMypzTubwX8OM98Fq2BM8rtip9VYnyqthnZUQMGY2umvH0GKS3miNvf97nR6er4tmDhl79gfhCz1_n1aQswfG4ibnLnFHpmzKvMVYQQB5UwozfXuIAY_R-alXpNA5Cmb_Cv27h742QGqp"/>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-4xl mx-auto flex flex-col items-center">
+<div class="w-full text-center mb-12 space-y-2">
+<span class="font-label text-sm font-bold tracking-[0.2em] text-primary uppercase">Victory Confirmed</span>
+<h2 class="text-6xl md:text-8xl font-headline font-black italic tracking-tighter text-primary-container drop-shadow-sm">KIA KAHA!</h2>
+</div>
+<div class="relative w-full aspect-video md:aspect-[21/9] rounded-lg overflow-hidden mb-12 shadow-2xl">
+<img class="w-full h-full object-cover" data-alt="energetic abstract background with vibrant orange and gold light rays, glowing particles, and motion blur effects suggesting high energy celebration" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDz-1U0pQR0s1hCyHdiQnWocW58Ljoa7Z9IYdbhQeaZkroZIIOjnVXk5vsUTBCe2aoenmKkMw8c582e1gVxELYqBiWwOgB1WP_X1vBUe-QDS5TjfK6RPXuf31Zo73lL_WrxWgn_0y_a6GGXxLZraTacMvDeGcaSmcIXgFxqqdqSHyGlQQN0GRPGHAOJY6MiKwd84C5EGMSvf-aGMACcF1yWKOMpmqtjs1gzlr4goqgJPfvzmbBxkjsRSii6UyQoGp6XERLJfTGp"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-8">
+<div class="flex items-center gap-6">
+<div class="w-24 h-24 bg-primary rounded-full flex items-center justify-center shadow-lg shadow-primary/40 ring-4 ring-white/20">
+<span class="material-symbols-outlined text-white text-5xl" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
+</div>
+<div>
+<p class="font-label text-white/80 tracking-widest text-xs">REWARD EARNED</p>
+<h3 class="text-4xl font-headline font-bold text-white tracking-tight">+500 MANA SHARDS</h3>
+</div>
+</div>
+</div>
+<div class="absolute top-6 right-6 px-4 py-2 bg-glass rounded-full border border-white/40 shadow-xl">
+<span class="font-label text-primary font-bold text-xs">S-TIER PERFORMANCE</span>
+</div>
+</div>
+<section class="w-full mb-12">
+<div class="flex justify-between items-end mb-4">
+<div class="space-y-1">
+<h4 class="font-headline font-bold text-xl">Leveling Up</h4>
+<p class="text-on-surface-variant text-sm">You are gaining legendary status</p>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="text-3xl font-black text-primary italic leading-none">13</span>
+<span class="text-on-surface-variant font-label text-xs">NEXT LVL</span>
+</div>
+</div>
+<div class="relative h-6 w-full bg-surface-container-high rounded-full overflow-hidden p-1 shadow-inner">
+<div class="absolute top-1 left-1 bottom-1 bg-gradient-to-r from-primary to-primary-container rounded-full w-[85%] transition-all duration-1000 ease-spring shadow-sm flex items-center justify-end px-3">
+<div class="w-2 h-2 bg-white rounded-full animate-pulse shadow-[0_0_8px_white]"></div>
+</div>
+</div>
+<div class="flex justify-between mt-3 px-2">
+<span class="font-label text-[10px] text-on-surface-variant">LVL 12</span>
+<span class="font-label text-[10px] text-primary font-bold italic">8,450 / 10,000 XP</span>
+<span class="font-label text-[10px] text-on-surface-variant">LVL 13</span>
+</div>
+</section>
+<section class="w-full grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+<div class="bg-surface-container-lowest p-8 rounded-lg shadow-[0_24px_40px_rgba(26,28,28,0.04)] border border-outline-variant/10 group hover:scale-[1.02] transition-transform duration-300">
+<div class="flex items-center justify-between mb-4">
+<div class="w-12 h-12 bg-tertiary/10 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">target</span>
+</div>
+<span class="font-label text-[10px] text-tertiary font-bold">+12% VS LAST</span>
+</div>
+<h5 class="font-label text-xs tracking-widest text-on-surface-variant mb-1 uppercase">Accuracy Rate</h5>
+<p class="text-5xl font-headline font-black text-on-surface italic">98.4<span class="text-xl text-tertiary not-italic ml-1">%</span></p>
+<div class="mt-4 h-1 w-12 bg-tertiary rounded-full"></div>
+</div>
+<div class="bg-surface-container-lowest p-8 rounded-lg shadow-[0_24px_40px_rgba(26,28,28,0.04)] border border-outline-variant/10 group hover:scale-[1.02] transition-transform duration-300">
+<div class="flex items-center justify-between mb-4">
+<div class="w-12 h-12 bg-primary-container/10 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<span class="font-label text-[10px] text-primary-container font-bold">PERFECT</span>
+</div>
+<h5 class="font-label text-xs tracking-widest text-on-surface-variant mb-1 uppercase">Sync Timing</h5>
+<p class="text-5xl font-headline font-black text-on-surface italic">0.04<span class="text-xl text-primary-container not-italic ml-1">MS</span></p>
+<div class="mt-4 h-1 w-12 bg-primary-container rounded-full"></div>
+</div>
+</section>
+<div class="w-full flex flex-col md:flex-row gap-4">
+<button class="flex-1 bg-gradient-to-br from-primary to-primary-container text-white py-6 px-10 rounded-full font-headline font-bold text-lg shadow-xl shadow-primary-container/30 hover:scale-105 transition-transform duration-200 active:scale-95 flex items-center justify-center gap-3">
+<span>Claim Rewards</span>
+<span class="material-symbols-outlined">auto_awesome</span>
+</button>
+<button class="flex-1 bg-surface-container-low text-on-surface py-6 px-10 rounded-full font-headline font-bold text-lg hover:bg-surface-container-high transition-colors active:scale-95 flex items-center justify-center gap-3">
+<span class="material-symbols-outlined">restart_alt</span>
+<span>Battle Again</span>
+</button>
+</div>
+</main>
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-2 bg-white/70 backdrop-blur-2xl shadow-[0_-8px_30px_rgba(0,0,0,0.04)] rounded-t-[2rem]">
+<a class="flex flex-col items-center justify-center text-slate-500 p-3 hover:bg-orange-50 transition-colors" href="#">
+<span class="material-symbols-outlined">stadium</span>
+<span class="font-epilogue text-[10px] uppercase tracking-widest font-bold mt-1">Arena</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-orange-500 text-white rounded-full p-3 shadow-lg shadow-orange-200/50 scale-110" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">gavel</span>
+<span class="font-epilogue text-[10px] uppercase tracking-widest font-bold mt-1">Judge</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 p-3 hover:bg-orange-50 transition-colors" href="#">
+<span class="material-symbols-outlined">library_music</span>
+<span class="font-epilogue text-[10px] uppercase tracking-widest font-bold mt-1">Collection</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 p-3 hover:bg-orange-50 transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-epilogue text-[10px] uppercase tracking-widest font-bold mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

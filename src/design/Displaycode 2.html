@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Judge Battle - KAIWHAKAWĀNABE</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400;1,700;1,800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container": "#eeeeee",
+                        "surface": "#f9f9f9",
+                        "surface-bright": "#f9f9f9",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#71d2ff",
+                        "error": "#ba1a1a",
+                        "on-tertiary-container": "#002f41",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#f3f3f3",
+                        "on-background": "#1a1c1c",
+                        "inverse-on-surface": "#f1f1f1",
+                        "tertiary-container": "#009ece",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#dadada",
+                        "tertiary": "#006686",
+                        "on-secondary-container": "#793b22",
+                        "on-tertiary-fixed": "#001e2b",
+                        "on-surface-variant": "#594139",
+                        "on-tertiary-fixed-variant": "#004d66",
+                        "background": "#f9f9f9",
+                        "primary-fixed": "#ffdbce",
+                        "outline": "#8c7167",
+                        "surface-tint": "#a73a00",
+                        "on-surface": "#1a1c1c",
+                        "on-secondary-fixed-variant": "#72361d",
+                        "secondary": "#8f4c32",
+                        "on-primary-container": "#521800",
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#e2e2e2",
+                        "secondary-container": "#ffa989",
+                        "secondary-fixed": "#ffdbce",
+                        "on-secondary-fixed": "#370e00",
+                        "inverse-surface": "#2f3131",
+                        "on-primary-fixed-variant": "#802a00",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#ffb59a",
+                        "secondary-fixed-dim": "#ffb59a",
+                        "surface-container-highest": "#e2e2e2",
+                        "surface-container-high": "#e8e8e8",
+                        "on-primary-fixed": "#370e00",
+                        "inverse-primary": "#ffb59a",
+                        "primary-container": "#f1692e",
+                        "primary": "#a73a00",
+                        "outline-variant": "#e0c0b4",
+                        "on-error": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed": "#c0e8ff"
+                    },
+                    fontFamily: {
+                        "headline": ["Epilogue"],
+                        "body": ["Epilogue"],
+                        "label": ["Epilogue"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .text-glow-orange {
+            text-shadow: 0 0 15px rgba(241, 105, 46, 0.4);
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #a73a00 0%, #f1692e 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface overflow-x-hidden">
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 flex items-center justify-between px-6 h-16 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl shadow-[0_24px_40px_rgba(26,28,28,0.06)]">
+<div class="flex items-center gap-4">
+<button class="hover:scale-105 transition-transform duration-200">
+<span class="material-symbols-outlined text-orange-600 dark:text-orange-400">menu</span>
+</button>
+<h1 class="text-xl font-bold tracking-tighter text-orange-700 dark:text-orange-500 italic font-epilogue">KAIWHAKAWĀNABE</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="hidden md:flex gap-6 mr-6">
+<a class="text-orange-700 font-bold font-epilogue text-sm" href="#">Arena</a>
+<a class="text-slate-600 font-epilogue text-sm" href="#">Judge</a>
+<a class="text-slate-600 font-epilogue text-sm" href="#">Collection</a>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container-high border-2 border-primary-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="professional male portrait with confident expression, neutral studio background, high quality editorial style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6qzEl5gbvshIr-XECXewemDLSAjorKGy77W0nnz-lrG84MoZwGpU0JsTpROgX5U5avGZhCSEXllIkfm-XFSChYndagzvOwPMbzfoQgEbagC74r2jauAx9fkS_OpHQ78n6gkutlGN7-cC92F12EeNwQ_-UxHY1Rg5l4Tt7V3wi25F2j2pO_G1j9HMvjWYkWmV_r1h7-U6tmICp9L7Yf08JeliXTd5H19UOQ4N9HuD298p6UteiiNohyRfr4WImWtmKvBiaVkrQ"/>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-4 md:px-8 max-w-7xl mx-auto min-h-screen">
+<!-- Battle Header -->
+<div class="relative w-full mb-12 flex flex-col items-center">
+<div class="absolute inset-0 -z-10 opacity-10">
+<div class="w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary-container via-transparent to-transparent"></div>
+</div>
+<div class="text-center mb-8">
+<span class="font-label text-sm uppercase tracking-[0.2em] text-primary font-bold">Current Bout</span>
+<h2 class="text-4xl md:text-6xl font-headline font-extrabold italic tracking-tight mt-2 text-on-surface">JUDGE BATTLE</h2>
+</div>
+<!-- Countdown Timer -->
+<div class="flex gap-4 items-center">
+<div class="flex flex-col items-center">
+<div class="w-16 h-16 rounded-xl bg-primary-container flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-orange-200">02</div>
+<span class="text-[10px] font-label font-bold mt-1 text-outline uppercase tracking-widest">MIN</span>
+</div>
+<span class="text-3xl font-bold text-primary">:</span>
+<div class="flex flex-col items-center">
+<div class="w-16 h-16 rounded-xl bg-primary-container flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-orange-200">45</div>
+<span class="text-[10px] font-label font-bold mt-1 text-outline uppercase tracking-widest">SEC</span>
+</div>
+</div>
+</div>
+<!-- PVP Comparison Arena -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative">
+<!-- VS Badge -->
+<div class="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-24 h-24 rounded-full gradient-bg items-center justify-center border-8 border-surface shadow-2xl">
+<span class="text-white font-headline font-black italic text-3xl tracking-tighter">VS</span>
+</div>
+<!-- Player Side -->
+<div class="lg:col-span-5 space-y-6">
+<div class="relative group">
+<div class="absolute -inset-1 gradient-bg rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+<div class="relative bg-white rounded-lg p-6 shadow-sm overflow-hidden">
+<div class="flex items-center gap-4 mb-6">
+<div class="w-16 h-16 rounded-full border-4 border-primary-container/20 p-1">
+<img class="w-full h-full object-cover rounded-full" data-alt="professional portrait of a gamer man, confident expression, soft warm lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD3p6_8xnxORt9UqH2nKnZSe8ByoNFKVL98glYo8tPw1nD_EOcifljL84Zz0Dh3gn2TOEglTHj0eiykHKQWT-ybzV3sK4WOx5hbQqlRpJAqQTsA8N23_u4Rbm3bpvTNjINp22PP0FWTn40NKhxhP4DMJ9D2JZQfg9gPTi3GwutES9tu2oE-c8MRPtVBwnxc-lOyAZzqLLw6izWrvxkf1LW7BqCg_-OqagOYqJ6ekfDI2OpM38gKDmv8YrJwbKIOmZqfTInpvtMp"/>
+</div>
+<div>
+<h3 class="font-headline font-bold text-xl uppercase tracking-tight">YOU (THE CHALLENGER)</h3>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-green-500"></span>
+<span class="text-xs font-label text-outline font-bold">RANK #1,204</span>
+</div>
+</div>
+</div>
+<!-- Your Score Card (Glassmorphism) -->
+<div class="glass-panel rounded-lg p-8 relative border border-white/40 shadow-xl overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 gradient-bg opacity-5 -mr-16 -mt-16 rounded-full"></div>
+<span class="font-label text-xs font-bold text-primary uppercase tracking-widest">Power Level</span>
+<div class="text-6xl font-headline font-black italic text-on-surface mt-2 tracking-tighter">14,280</div>
+<div class="mt-6 space-y-3">
+<div class="flex justify-between items-center">
+<span class="text-sm font-label text-outline uppercase">Technique</span>
+<div class="w-32 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-[85%]"></div>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-sm font-label text-outline uppercase">Ancestry</span>
+<div class="w-32 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-[72%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Button -->
+<button class="w-full h-16 rounded-full gradient-bg text-white font-headline font-extrabold italic text-lg shadow-xl shadow-orange-200 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">bolt</span>
+                    ATTACK WITH MANA
+                </button>
+</div>
+<!-- Divider for Mobile -->
+<div class="lg:hidden flex items-center justify-center py-4">
+<div class="w-16 h-16 rounded-full gradient-bg flex items-center justify-center shadow-lg">
+<span class="text-white font-headline font-black italic text-xl">VS</span>
+</div>
+</div>
+<!-- Rival Side -->
+<div class="lg:col-span-5 lg:col-start-8 space-y-6">
+<div class="bg-surface-container-low rounded-lg p-6 relative overflow-hidden">
+<div class="flex flex-row-reverse items-center gap-4 mb-6">
+<div class="w-16 h-16 rounded-full border-4 border-tertiary/20 p-1">
+<img class="w-full h-full object-cover rounded-full" data-alt="portrait of a formidable opponent man, sharp features, dramatic lighting, intense gaze" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqYgdN0uPzcFQIpoAcjYg1PIKWwEQL_wJVo11p9-2QOiB7827ut_Y77Ep_ngM53BmXukPL4_ITgUUWTH-kQkHFatLAAUIfDAdq7CrI_Q2au0PRkfO7h8i8AdcImztuDUwsoyoN3DDaLo4wMmRnvjEpqHCvqtlhDsTzS7MG9b-LKQI8-Dpf46pR5OWbAu4kOUFuHCUS2kgzP8uiuypN1y58qXUvbrxiZLZRzJzaPDGCiy77WC5sdw05hlSQ-cU42hZmWJ1Y3t7m"/>
+</div>
+<div class="text-right">
+<h3 class="font-headline font-bold text-xl uppercase tracking-tight">KAI-RAPA (RIVAL)</h3>
+<div class="flex items-center justify-end gap-2">
+<span class="text-xs font-label text-outline font-bold">RANK #842</span>
+<span class="w-3 h-3 rounded-full bg-red-500"></span>
+</div>
+</div>
+</div>
+<!-- Rival Score Card (Glassmorphism) -->
+<div class="glass-panel rounded-lg p-8 border border-white/20 shadow-lg relative">
+<span class="font-label text-xs font-bold text-tertiary uppercase tracking-widest">Power Level</span>
+<div class="text-6xl font-headline font-black italic text-on-surface mt-2 tracking-tighter">15,910</div>
+<div class="mt-6 space-y-3">
+<div class="flex justify-between items-center">
+<span class="text-sm font-label text-outline uppercase">Technique</span>
+<div class="w-32 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-[92%]"></div>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-sm font-label text-outline uppercase">Ancestry</span>
+<div class="w-32 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-[65%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Secondary Action -->
+<button class="w-full h-16 rounded-full border-2 border-primary-container/20 bg-white text-primary font-headline font-extrabold italic text-lg hover:bg-orange-50 active:scale-95 transition-all flex items-center justify-center gap-3">
+<span class="material-symbols-outlined">shield</span>
+                    DEFENSIVE POSTURE
+                </button>
+</div>
+</div>
+<!-- Battle Logs / Bento Section -->
+<div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="md:col-span-2 bg-surface-container-lowest rounded-lg p-8 shadow-sm">
+<h4 class="font-headline font-bold text-2xl mb-6 italic">BATTLE CHRONICLE</h4>
+<div class="space-y-6">
+<div class="flex items-start gap-4 p-4 rounded-xl bg-orange-50/50">
+<span class="material-symbols-outlined text-primary mt-1">history_edu</span>
+<div>
+<p class="text-on-surface leading-relaxed">You channeled <span class="font-bold text-primary">Ancestral Mana</span>, increasing your Technique score by <span class="font-bold">+450</span>.</p>
+<span class="text-[10px] font-label font-bold text-outline uppercase mt-1 block">45 seconds ago</span>
+</div>
+</div>
+<div class="flex items-start gap-4 p-4 rounded-xl bg-slate-50/50">
+<span class="material-symbols-outlined text-tertiary mt-1">swords</span>
+<div>
+<p class="text-on-surface leading-relaxed">Kai-Rapa unleashed <span class="font-bold text-tertiary">Oceanic Gale</span>. Your defense took minor damage.</p>
+<span class="text-[10px] font-label font-bold text-outline uppercase mt-1 block">2 minutes ago</span>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-primary p-8 rounded-lg text-white relative overflow-hidden flex flex-col justify-between shadow-xl">
+<div class="absolute -right-12 -top-12 w-48 h-48 bg-white/10 rounded-full blur-2xl"></div>
+<div>
+<span class="font-label text-xs uppercase tracking-widest opacity-80">Battle Streak</span>
+<div class="text-5xl font-headline font-black italic mt-2">3X</div>
+</div>
+<div class="mt-8">
+<p class="font-body text-sm opacity-90 leading-relaxed mb-6">Winning this bout will elevate you to the <strong>Warrior Tier</strong> in the global Arena.</p>
+<div class="w-full h-2 bg-white/20 rounded-full overflow-hidden">
+<div class="h-full bg-white w-3/4"></div>
+</div>
+<div class="flex justify-between mt-2 text-[10px] font-label font-bold uppercase tracking-widest">
+<span>Current</span>
+<span>Tier Up</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-2 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl shadow-[0_-8px_30px_rgba(0,0,0,0.04)] rounded-t-[2rem]">
+<a class="flex flex-col items-center justify-center text-slate-500 p-3 hover:bg-orange-50 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1">stadium</span>
+<span class="font-epilogue text-[10px] uppercase tracking-widest font-bold">Arena</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-orange-500 text-white rounded-full p-3 shadow-lg shadow-orange-200/50 transition-all scale-110" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">gavel</span>
+<span class="font-epilogue text-[10px] uppercase tracking-widest font-bold">Judge</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 p-3 hover:bg-orange-50 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1">library_music</span>
+<span class="font-epilogue text-[10px] uppercase tracking-widest font-bold">Collection</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 p-3 hover:bg-orange-50 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1">person</span>
+<span class="font-epilogue text-[10px] uppercase tracking-widest font-bold">Profile</span>
+</a>
+</nav>
+<!-- Floating Action Button Suppression - Hidden on Battle Screen as per guidelines -->
+</body></html>

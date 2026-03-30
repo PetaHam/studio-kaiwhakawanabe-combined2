@@ -1,0 +1,41 @@
+{
+  "name": "Kaiwhakawānabe – The Couch Judge",
+  "short_name": "Kapa Haka Judge",
+  "description": "Live Kapa Haka Fan Judging & Engagement Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#FF4500",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["entertainment", "social", "sports"],
+  "shortcuts": [
+    {
+      "name": "Judge Now",
+      "short_name": "Judge",
+      "description": "Start judging performances",
+      "url": "/vote",
+      "icons": []
+    },
+    {
+      "name": "My Profile",
+      "short_name": "Profile",
+      "description": "View your judge profile",
+      "url": "/profile",
+      "icons": []
+    },
+    {
+      "name": "Leaderboard",
+      "short_name": "Leaderboard",
+      "description": "View top judges",
+      "url": "/leaderboard",
+      "icons": []
+    }
+  ]
+}

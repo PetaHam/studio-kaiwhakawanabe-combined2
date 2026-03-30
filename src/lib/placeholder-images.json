@@ -1,0 +1,28 @@
+{
+  "placeholderImages": [
+    {
+      "id": "hero-kapa-haka",
+      "description": "Kapa haka performance close up",
+      "imageUrl": "https://picsum.photos/seed/kapa1/800/600",
+      "imageHint": "kapa haka"
+    },
+    {
+      "id": "event-te-matatini",
+      "description": "Te Matatini Festival Stage",
+      "imageUrl": "https://picsum.photos/seed/festival/800/450",
+      "imageHint": "cultural festival"
+    },
+    {
+      "id": "team-poi",
+      "description": "Poi performance",
+      "imageUrl": "https://picsum.photos/seed/poi/600/400",
+      "imageHint": "poi dance"
+    },
+    {
+      "id": "team-haka",
+      "description": "Haka performance energy",
+      "imageUrl": "https://picsum.photos/seed/haka/600/400",
+      "imageHint": "haka energy"
+    }
+  ]
+}

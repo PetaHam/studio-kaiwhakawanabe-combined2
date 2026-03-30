@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- User Profiles ---
+    // Public Discovery: Anyone can see top judges
+    match /users/{userId} {
+      allow get, list: if true;
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['receivedHearts']));
+      allow delete: if isOwner(userId);
+    }
+
+    // --- Polls ---
+    // Public Results: Anyone can see the pulse of the community
+    match /polls/{pollId} {
+      allow get, list: if true;
+      match /votes/{userId} {
+        allow get, list: if true;
+        allow create, update: if isOwner(userId);
+      }
+    }
+
+    // --- Parties (Public Arena Chats) ---
+    // Discovery Mode: Anyone can find and view the status of arena chats
+    match /parties/{partyId} {
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && resource.data.leaderId == request.auth.uid;
+      
+      // Member-specific rules: Judges must be able to manage their own tactical footprint
+      match /members/{memberId} {
+        allow get, list: if true;
+        allow create: if isSignedIn();
+        allow update, delete: if isOwner(memberId);
+      }
+
+      // Message Feed & Other Sub-collections: Public can read transcripts
+      match /{allSubcollections=**} {
+        allow get, list: if true;
+        allow create: if isSignedIn();
+      }
+    }
+
+    // --- Public Catalog ---
+    match /performances/{perfId} {
+      allow get, list: if true;
+    }
+    match /teams/{teamId} {
+      allow get, list: if true;
+    }
+    
+    // Security Policy v1.6: Enabled self-management for party members
+  }
+}

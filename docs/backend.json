@@ -1,0 +1,177 @@
+
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user account and their personalized data, preferences, and engagement metrics within the Kaiwhakawānabe app.",
+      "properties": {
+        "id": { "type": "string" },
+        "shortId": { "type": "string", "description": "Short unique ID for social sharing." },
+        "displayName": { "type": "string" },
+        "roopuName": { "type": "string", "description": "The name of the user's custom kapa haka group for drafting." },
+        "email": { "type": "string", "format": "email" },
+        "profileImageUrl": { "type": "string", "description": "URL for the user's profile picture." },
+        "ageVerified": { "type": "boolean" },
+        "parentalApprovalNeeded": { "type": "boolean" },
+        "parentalApprovalGiven": { "type": "boolean" },
+        "criticPoints": { "type": "number" },
+        "likedPoints": { "type": "number", "description": "Points earned for high-quality positive adjudication." },
+        "dislikedPoints": { "type": "number", "description": "Points earned for high-quality critical/negative adjudication." },
+        "vibePoints": { "type": "number", "description": "Points earned for silly, high-energy, or humorous commentary." },
+        "receivedHearts": { "type": "number", "description": "Total hearts (Luv) received from the community." },
+        "lastHeartGivenAt": { "type": "string", "format": "date-time", "description": "Timestamp of the last heart given to enforce 1-per-day rule." },
+        "lastLoginAt": { "type": "string", "format": "date-time" },
+        "streakCount": { "type": "number" },
+        "dailyTasksCompleted": { "type": "array", "items": { "type": "string" } },
+        "hypedEventIds": { "type": "array", "items": { "type": "string" }, "description": "List of event IDs the user has claimed hype shards for." },
+        "profileColor": { "type": "string", "description": "Bebo-style theme color for the profile background." },
+        "customBackgroundImageUrl": { "type": "string", "description": "URL for a custom roopu/hapu background image." },
+        "socialLinks": { "type": "object", "properties": { "instagram": { "type": "string" }, "facebook": { "type": "string" }, "tiktok": { "type": "string" } } },
+        "manaBackgroundEnabled": { "type": "boolean", "description": "Whether to show the swirling Kowhaiwhai background pattern." },
+        "voteCount": { "type": "number" },
+        "commentCount": { "type": "number" },
+        "favoriteTeamIds": { "type": "array", "items": { "type": "string" } },
+        "unlockedLegacyIds": { "type": "array", "items": { "type": "string" }, "description": "List of legacy roopu IDs the user has purchased with mana." },
+        "currentDraft": { "type": "object", "description": "The user's current 6-item lineup." },
+        "manaSpent": { "type": "number", "description": "Total mana spent on unlocks." },
+        "purchasedMana": { "type": "number", "description": "Total mana purchased through in-app transactions." },
+        "themePreference": { "type": "string" },
+        "hasCompletedTutorial": { "type": "boolean", "description": "Whether the user has finished the onboarding tour." },
+        "activePartyId": { "type": "string", "description": "The ID of the party the user is currently participating in." },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "displayName", "email", "createdAt", "updatedAt"]
+    },
+    "Poll": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Poll",
+      "type": "object",
+      "description": "A weekly poll for iconic kapa haka items.",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "team": { "type": "string" },
+              "item": { "type": "string" },
+              "year": { "type": "string" }
+            }
+          }
+        },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "PollVote": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PollVote",
+      "type": "object",
+      "description": "A user's vote in an iconic poll.",
+      "properties": {
+        "userId": { "type": "string" },
+        "optionId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Party": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Party",
+      "type": "object",
+      "description": "A group of users voting collectively on a performance.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "password": { "type": "string", "description": "Room password for tactical security." },
+        "joinCode": { "type": "string" },
+        "status": { "type": "string", "enum": ["waiting", "live", "finished"] },
+        "leaderId": { "type": "string" },
+        "performanceId": { "type": "string" },
+        "delegations": { "type": "object", "description": "Map of userId to array of assigned itemId strings" },
+        "lockedItemIds": { "type": "array", "items": { "type": "string" }, "description": "List of item IDs that have been globally locked in order" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "leaderId", "performanceId", "status", "createdAt"]
+    },
+    "PartyMember": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PartyMember",
+      "type": "object",
+      "description": "A user who has joined a judging party.",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userColor": { "type": "string", "description": "Unique identifiable color for chat." },
+        "isTyping": { "type": "boolean" },
+        "joinedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "PartyMessage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PartyMessage",
+      "type": "object",
+      "description": "A message sent within a private judging party.",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userColor": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "PartyVote": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PartyVote",
+      "type": "object",
+      "description": "A scorecard submitted by a party member with point delegation and top-3 ranking predictions.",
+      "properties": {
+        "userId": { "type": "string" },
+        "delegatedPoints": { "type": "object", "description": "Map of roopu ID to points given (Sum must be 100)" },
+        "ranking": { "type": "array", "items": { "type": "string" }, "description": "Top 3 roopu IDs in predicted order" },
+        "averageScore": { "type": "number", "description": "Legacy field used for compatibility" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "auth": {
+    "providers": ["password", "anonymous"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/backend/entities/UserProfile" },
+      "description": "User profiles and preferences."
+    },
+    "/polls/{pollId}": {
+      "schema": { "$ref": "#/backend/entities/Poll" },
+      "description": "Weekly iconic polls."
+    },
+    "/polls/{pollId}/votes/{userId}": {
+      "schema": { "$ref": "#/backend/entities/PollVote" },
+      "description": "Individual votes for the weekly poll."
+    },
+    "/parties/{partyId}": {
+      "schema": { "$ref": "#/backend/entities/Party" },
+      "description": "Judging parties for collective voting."
+    },
+    "/parties/{partyId}/members/{userId}": {
+      "schema": { "$ref": "#/backend/entities/PartyMember" },
+      "description": "Individual members of a party."
+    },
+    "/parties/{partyId}/messages/{messageId}": {
+      "schema": { "$ref": "#/backend/entities/PartyMessage" },
+      "description": "Private chat messages within a party."
+    },
+    "/parties/{partyId}/votes/{userId}": {
+      "schema": { "$ref": "#/backend/entities/PartyVote" },
+      "description": "Individual scorecards within a party for averaging."
+    }
+  }
+}

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,100..900;1,100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container": "#eeeeee",
+              "surface": "#f9f9f9",
+              "surface-bright": "#f9f9f9",
+              "error-container": "#ffdad6",
+              "tertiary-fixed-dim": "#71d2ff",
+              "error": "#ba1a1a",
+              "on-tertiary-container": "#002f41",
+              "on-tertiary": "#ffffff",
+              "surface-container-low": "#f3f3f3",
+              "on-background": "#1a1c1c",
+              "inverse-on-surface": "#f1f1f1",
+              "tertiary-container": "#009ece",
+              "on-primary": "#ffffff",
+              "surface-dim": "#dadada",
+              "tertiary": "#006686",
+              "on-secondary-container": "#793b22",
+              "on-tertiary-fixed": "#001e2b",
+              "on-surface-variant": "#594139",
+              "on-tertiary-fixed-variant": "#004d66",
+              "background": "#f9f9f9",
+              "primary-fixed": "#ffdbce",
+              "outline": "#8c7167",
+              "surface-tint": "#a73a00",
+              "on-surface": "#1a1c1c",
+              "on-secondary-fixed-variant": "#72361d",
+              "secondary": "#8f4c32",
+              "on-primary-container": "#521800",
+              "on-secondary": "#ffffff",
+              "surface-variant": "#e2e2e2",
+              "secondary-container": "#ffa989",
+              "secondary-fixed": "#ffdbce",
+              "on-secondary-fixed": "#370e00",
+              "inverse-surface": "#2f3131",
+              "on-primary-fixed-variant": "#802a00",
+              "surface-container-lowest": "#ffffff",
+              "primary-fixed-dim": "#ffb59a",
+              "secondary-fixed-dim": "#ffb59a",
+              "surface-container-highest": "#e2e2e2",
+              "surface-container-high": "#e8e8e8",
+              "on-primary-fixed": "#370e00",
+              "inverse-primary": "#ffb59a",
+              "primary-container": "#f1692e",
+              "primary": "#a73a00",
+              "outline-variant": "#e0c0b4",
+              "on-error": "#ffffff",
+              "on-error-container": "#93000a",
+              "tertiary-fixed": "#c0e8ff"
+            },
+            fontFamily: {
+              "headline": ["Epilogue"],
+              "body": ["Epilogue"],
+              "label": ["Epilogue"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .pattern-overlay {
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 50 Q 25 0 50 50 T 100 50' fill='none' stroke='%23f1692e' stroke-opacity='0.05' stroke-width='1'/%3E%3C/svg%3E");
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex items-center justify-between px-6 h-16 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl shadow-[0_24px_40px_rgba(26,28,28,0.06)]">
+<div class="flex items-center gap-4">
+<button class="text-orange-600 dark:text-orange-400 hover:scale-105 transition-transform duration-200">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-epilogue font-bold tracking-tight italic text-xl tracking-tighter text-orange-700 dark:text-orange-500">KAIWHAKAWĀNABE</h1>
+</div>
+<div class="flex items-center">
+<div class="w-10 h-10 rounded-full border-2 border-primary-container overflow-hidden hover:scale-105 transition-transform duration-200">
+<img alt="User" data-alt="professional headshot of a smiling man with clean background, soft lighting, high quality portrait photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCILCjAsSBnjNBT1CyfHG_6DDwj5U4-N0hYlFtxxzb8oCosBSt12LAQYjy7f_aEfIndY_tbqSxwHgqKKtlh4MW5Cz1ah9AupOJxZz8h-fVOoSk5-C0vF0SmfBqvXbYdQ2qh-v8hBC7JvEvHgAJT3bYKJ5WhbSeEs5vxq2vBiX479FjANAXhmjGHlhToE84Qw0qcNHVodgyIMmUboj8cwBXplK2-C57r7KZlOJo2w8YWawtDU8Oh_6JFrJ-ZHDEDegSfU1LuMizf"/>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-7xl mx-auto pattern-overlay">
+<!-- Hero Section: Now Performing -->
+<section class="relative mb-12">
+<div class="relative w-full aspect-[21/9] rounded-lg overflow-hidden shadow-xl group">
+<img alt="Te Matatini Performance" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="dynamic wide shot of a kapa haka group performing on stage with dramatic orange lighting and traditional Maori attire, Te Matatini festival atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkEKLKL_hgfK7Ctw3p21wszct6ZnLH7Pv8Vli_Fo56BXRufKuBw7JtRSFzBkaMaVnIii2PsUuTpQ_HziES7HlBlxm63vanfASMZVrstKNCPQkdKAZQAFrXb0wVg-eLuc7c4fVjBqLXULX_UjQ5rXazFOpwTgwJxL4MyiA6_fTwYox-kbY3H0nt8-bH-qT67pq5g-GPru7MYKM3Jqydmhh668b03hVKH3cWJudIyejRhAHn4q14O3lEJ55TFTKhVyTBSzkbaH8p"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-8 md:p-12 w-full flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div class="space-y-2">
+<div class="inline-flex items-center gap-2 bg-primary-container text-on-primary-container px-4 py-1.5 rounded-full font-bold text-xs tracking-widest uppercase">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+</span>
+                            LIVE NOW • TE MATATINI
+                        </div>
+<h2 class="text-white text-4xl md:text-6xl font-headline font-bold italic tracking-tighter">Te Kapa Haka o Ngāti Whakaue</h2>
+<p class="text-white/80 text-lg font-medium max-w-xl">Whakaeke: Entry Performance. Traditional movements weaving ancestral stories into modern rhythm.</p>
+</div>
+<button class="bg-primary-container text-on-primary-container hover:scale-105 transition-transform duration-200 px-8 py-4 rounded-full font-bold flex items-center gap-3 shadow-lg shadow-primary-container/20">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">gavel</span>
+                        START JUDGING
+                    </button>
+</div>
+</div>
+</section>
+<!-- Main Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Judging Parties (Bento Style) -->
+<div class="lg:col-span-2 space-y-8">
+<header class="flex items-center justify-between">
+<div>
+<h3 class="text-2xl font-headline font-bold tracking-tight">Judging Parties</h3>
+<p class="text-on-surface-variant text-sm">Join a collective and sync your scores with peers.</p>
+</div>
+<button class="text-primary font-bold text-sm tracking-widest uppercase hover:underline">View All</button>
+</header>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Party Card 1 -->
+<div class="glass-card p-6 rounded-lg shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-xl transition-all duration-300 border border-white/40">
+<div class="flex justify-between items-start mb-4">
+<div class="flex -space-x-3">
+<img alt="Avatar" class="w-10 h-10 rounded-full border-2 border-white" data-alt="portrait of a young woman with a warm smile, outdoor lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5pWbsFcIqA2gzEl3X1CPoeB11OIQ892cXoIsRjICgwIn2M5Dww48-7KELQV-e8boNCH_mFtSCm_q54gFsUjPEf4cet-Z-ndVGUPPYpZYZc0IPboy-kI8DA-rXZSeFHvHJbFvnmep9rQ73SDUGnsEMZlQD688qNVtj3M9301CYdiJA2EFNDHOxJ1r1Q02dwZ37-e2fmMHza9xhRKHjWYM_hwkQ4r8ESm7ExI2xw29Dq--jyMyf9IgYXInnfAIWBcF1h_9cvoZb"/>
+<img alt="Avatar" class="w-10 h-10 rounded-full border-2 border-white" data-alt="portrait of a bearded man in a casual setting, soft daylight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBgWmjrR9Hd5bfFOL-tVPTz9IMFxNv4yldUYEmUf9el-0OzucgHuwDybw7mmBy-oECBPgps89HLE1ENMowyG4EEBjp5zAzmGyM4O1h-JH5Q96gpRKPixeon5eRSDqkc_QykD_SpTkzaHB_a948AP-JT3PyZ2Njc5CHiIKeJm2CNyh_vHk924MWYjQ3F8GtfQHsoa9vGnkhm5DKZkCaFHS_0cZ2C9NnsxapRUWtDcV8T7sh5zJgOEcv5xS2VUQpcfCa4ArojOSZ7"/>
+<img alt="Avatar" class="w-10 h-10 rounded-full border-2 border-white" data-alt="headshot of a man with spectacles, professional studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBb7KUQJRBpkgRo_WXNi7nA0Mfe3kjdExYJqgV0oj7ISFOofnYK3AHNi8NK7Ic16p2Wwi5ituOpFLeRyJzsixH4Y-z1gEIBgmf3ZiPEMpOTEFYemogdUPlqOg4HKoXkit3zNOOsjphSw3_QiL6lij8pUVPjBDzmff-ce72C3OQyr8vO9qXkosVk6n_9F7X9-VOmVXadKY2ZVOf3_vbB1P_y5J5RjphHqKJVP-SEEfUFt_JTSc8Ms6S8XqWM6rFiOUOr0KPNA6r"/>
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-[10px] font-bold border-2 border-white">+12</div>
+</div>
+<span class="bg-tertiary-container/10 text-tertiary text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">Active</span>
+</div>
+<h4 class="text-xl font-bold mb-2">Auckland Haka Enthusiasts</h4>
+<p class="text-on-surface-variant text-sm mb-6 line-clamp-2">A dedicated group of senior performers and tutors reviewing technical execution and choral precision.</p>
+<button class="w-full bg-primary-container text-on-primary-container py-3 rounded-full font-bold flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform">
+                            Join Judging Party
+                        </button>
+</div>
+<!-- Party Card 2 -->
+<div class="glass-card p-6 rounded-lg shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-xl transition-all duration-300 border border-white/40">
+<div class="flex justify-between items-start mb-4">
+<div class="flex -space-x-3">
+<img alt="Avatar" class="w-10 h-10 rounded-full border-2 border-white" data-alt="close up of a middle aged man with friendly expression, outdoor natural light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3K3_0PIrLhUGGNIzbg14AHg2qwD93kwS7nQeif5RooG5y080G9kb_b0bnRFtn-2OgonY3XZE6lyd75HKfLOFj-L2nodCSnrFq-KO3d8Fuj2o40AJJc8h2qvAmDKQcFzX0zgNlc6sZlkWd8dKSq8YOKGH0EIDIxCOt1f8P3rUfiTg36-3TLofeBohFpuJvWnD_fYOVYBPId_K-56xBRJZfTylIprQDw8jwYlUl6Aq5ZiSm89F7hzSjF0NHRgHK64WYxX0iRxGJ"/>
+<img alt="Avatar" class="w-10 h-10 rounded-full border-2 border-white" data-alt="portrait of a calm woman with neutral background, bright soft lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCPav5cVLQlEQoznhigUJ6bBjKmzj02XnYj4z2o-RWI3OWROfyu_9RCxV7lsCymgwj8gcF9IyjVR7b0mIIK3jzZaS0LWiPRGiQ-TLjL5yoYIumXdprVqnEZ1wwA9No9sdID7RBVT7fmf46VkdCcU7PfHHMjnB3QxYoqq6NRFi16FJxvU08_-w8b8JTcAuBHBYY6us4A-gMBbBcp7YBDNWxNQQgfPhOpWilkKamWmkwm6Xif1Lc_nxn9tUHPlh2k3PsdE0OEQwA"/>
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-[10px] font-bold border-2 border-white">+5</div>
+</div>
+<span class="bg-surface-container text-on-surface-variant text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">Private</span>
+</div>
+<h4 class="text-xl font-bold mb-2">Waikato Tainui Review</h4>
+<p class="text-on-surface-variant text-sm mb-6 line-clamp-2">Invite-only group focusing on regional specificities and historical narrative accuracy.</p>
+<button class="w-full border-2 border-primary-container text-primary py-3 rounded-full font-bold flex items-center justify-center gap-2 hover:bg-primary-container/5 transition-colors">
+                            Request Invite
+                        </button>
+</div>
+</div>
+</div>
+<!-- Current Standings (Sidebar Style) -->
+<aside class="space-y-8">
+<header>
+<h3 class="text-2xl font-headline font-bold tracking-tight">Live Leaderboard</h3>
+<p class="text-on-surface-variant text-sm">Real-time aggregate scoring</p>
+</header>
+<div class="bg-surface-container-low rounded-lg p-2 space-y-1">
+<!-- Standing Item 1 -->
+<div class="bg-white p-4 rounded-lg flex items-center justify-between shadow-sm border border-transparent hover:border-primary-container/20 transition-all group">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-headline font-black italic text-primary-container/30 group-hover:text-primary-container">01</span>
+<div>
+<h5 class="font-bold leading-tight">Te Kapa Haka o Ngāti Whakaue</h5>
+<p class="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant">Performing Now</p>
+</div>
+</div>
+<div class="text-right">
+<span class="text-lg font-bold">98.4</span>
+<div class="h-1 w-12 bg-primary-container rounded-full mt-1"></div>
+</div>
+</div>
+<!-- Standing Item 2 -->
+<div class="p-4 rounded-lg flex items-center justify-between transition-all group">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-headline font-black italic text-on-surface-variant/20">02</span>
+<div>
+<h5 class="font-bold leading-tight">Te Waka Huia</h5>
+<p class="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant/50">Finished</p>
+</div>
+</div>
+<div class="text-right">
+<span class="text-lg font-bold text-on-surface-variant">97.8</span>
+<div class="h-1 w-12 bg-surface-dim rounded-full mt-1"></div>
+</div>
+</div>
+<!-- Standing Item 3 -->
+<div class="p-4 rounded-lg flex items-center justify-between transition-all group">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-headline font-black italic text-on-surface-variant/20">03</span>
+<div>
+<h5 class="font-bold leading-tight">Whāngārā Mai Tawhiti</h5>
+<p class="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant/50">Finished</p>
+</div>
+</div>
+<div class="text-right">
+<span class="text-lg font-bold text-on-surface-variant">96.5</span>
+<div class="h-1 w-12 bg-surface-dim rounded-full mt-1"></div>
+</div>
+</div>
+<!-- Standing Item 4 -->
+<div class="p-4 rounded-lg flex items-center justify-between transition-all group">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-headline font-black italic text-on-surface-variant/20">04</span>
+<div>
+<h5 class="font-bold leading-tight">Hātea Kapa Haka</h5>
+<p class="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant/50">Finished</p>
+</div>
+</div>
+<div class="text-right">
+<span class="text-lg font-bold text-on-surface-variant">94.2</span>
+<div class="h-1 w-12 bg-surface-dim rounded-full mt-1"></div>
+</div>
+</div>
+</div>
+<!-- Heritage Badge Section -->
+<div class="bg-primary p-6 rounded-lg text-white relative overflow-hidden">
+<div class="relative z-10">
+<span class="bg-white/20 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-4 inline-block">S-TIER ACCESS</span>
+<h4 class="text-2xl font-bold font-headline italic mb-2">Heritage Archives</h4>
+<p class="text-white/80 text-sm mb-6">Access historical scoring data and archival performances from 1972 to present.</p>
+<button class="bg-white text-primary px-6 py-2 rounded-full font-bold text-sm hover:bg-orange-50 transition-colors">Explore Collection</button>
+</div>
+<span class="material-symbols-outlined absolute -right-4 -bottom-4 text-9xl opacity-10 rotate-12" style="font-variation-settings: 'FILL' 1;">library_music</span>
+</div>
+</aside>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-2 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl shadow-[0_-8px_30px_rgba(0,0,0,0.04)] rounded-t-[2rem]">
+<!-- Arena (Active) -->
+<a class="flex flex-col items-center justify-center bg-orange-500 text-white rounded-full p-3 shadow-lg shadow-orange-200/50 scale-110 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">stadium</span>
+<span class="font-epilogue text-[10px] uppercase tracking-widest font-bold mt-1">Arena</span>
+</a>
+<!-- Judge -->
+<a class="flex flex-col items-center justify-center text-slate-500 p-3 hover:bg-orange-50 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">gavel</span>
+<span class="font-epilogue text-[10px] uppercase tracking-widest font-bold mt-1">Judge</span>
+</a>
+<!-- Collection -->
+<a class="flex flex-col items-center justify-center text-slate-500 p-3 hover:bg-orange-50 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">library_music</span>
+<span class="font-epilogue text-[10px] uppercase tracking-widest font-bold mt-1">Collection</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-slate-500 p-3 hover:bg-orange-50 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-epilogue text-[10px] uppercase tracking-widest font-bold mt-1">Profile</span>
+</a>
+</nav>
+</body></html>
