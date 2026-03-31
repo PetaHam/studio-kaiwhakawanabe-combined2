@@ -6,12 +6,25 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, MapPin, Clock, ListOrdered, MessageSquare, Play, ChevronLeft, Timer, History, Zap } from 'lucide-react'
+import { Calendar, MapPin, ListOrdered, ChevronLeft, Trophy } from 'lucide-react'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
+import { MySelectionModal } from '@/components/MySelectionModal'
+import { MySelectionResultCard } from '@/components/MySelectionResultCard'
+import { useMySelection } from '@/hooks/use-my-selection'
+import { useUser, useFirestore } from '@/firebase'
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface Roopu {
+  id: string;
+  name: string;
+  time: string;
+  sortKey: number;
+}
 
 interface Event {
   id: string;
@@ -23,8 +36,11 @@ interface Event {
   status: 'Closed Arena' | 'Upcoming Arena';
   type: 'Regional';
   image: string;
-  roopu: any[];
+  roopu: Roopu[];
+  qualifierCount?: number; // default 6
 }
+
+// ─── Event Data ───────────────────────────────────────────────────────────────
 
 const events: Event[] = [
   {
@@ -37,9 +53,10 @@ const events: Event[] = [
     status: 'Closed Arena',
     type: 'Regional',
     image: PlaceHolderImages[2].imageUrl,
+    qualifierCount: 6,
     roopu: [
       { id: 'apanui', name: 'Te Kapa Haka o Te Whānau-a-Apanui', time: 'OFFICIAL RESULTS', sortKey: 1 },
-      { id: 'ohinemataroa', name: 'Ōhinemataroa ki Ruatāhuna', time: 'OFFICIAL RESULTS', sortKey: 2 }
+      { id: 'ohinemataroa', name: 'Ōhinemataroa ki Ruatāhuna', time: 'OFFICIAL RESULTS', sortKey: 2 },
     ]
   },
   {
@@ -52,13 +69,16 @@ const events: Event[] = [
     status: 'Upcoming Arena',
     type: 'Regional',
     image: PlaceHolderImages[0].imageUrl,
+    qualifierCount: 6,
     roopu: [
       { id: 'atawhai', name: 'Te Atawhai Puumananawa', time: '9:00 AM', sortKey: 1 },
       { id: 'raranga', name: 'Te Raranga Whānui', time: '9:40 AM', sortKey: 2 },
-      { id: 'hau-tawhiti', name: 'Te Kapa Haka o Te Hau Tawhiti', time: '10:20 AM', sortKey: 3 }
+      { id: 'hau-tawhiti', name: 'Te Kapa Haka o Te Hau Tawhiti', time: '10:20 AM', sortKey: 3 },
     ]
-  }
+  },
 ]
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function EventCountdown({ startDate }: { startDate: Date }) {
   const [timeLeft, setTimeLeft] = useState<{ d: number, h: number, m: number, s: number } | null>(null);
@@ -81,37 +101,157 @@ function EventCountdown({ startDate }: { startDate: Date }) {
   return <div className="flex items-center gap-1">LIVE IN: {timeLeft.d}D {timeLeft.h}H {timeLeft.m}M</div>;
 }
 
+// ─── Per-event My Selection wrapper ──────────────────────────────────────────
+
+function EventSelectionSection({
+  event,
+  onOpenModal,
+}: {
+  event: Event;
+  onOpenModal: (eventId: string) => void;
+}) {
+  const { user } = useUser();
+  const db = useFirestore();
+
+  const { selection, eventResult, isLoading } = useMySelection({
+    db,
+    user,
+    eventId: event.id,
+    qualifierCount: event.qualifierCount ?? 6,
+  });
+
+  const roopuMap = React.useMemo(() => {
+    const m = new Map<string, string>();
+    event.roopu.forEach(r => m.set(r.id, r.name));
+    return m;
+  }, [event.roopu]);
+
+  if (!user || isLoading) return null;
+
+  // Show result card if user has picks
+  if (selection && selection.picks.length > 0) {
+    return (
+      <MySelectionResultCard
+        selection={selection}
+        eventResult={eventResult}
+        roopuMap={roopuMap}
+        qualifierCount={event.qualifierCount ?? 6}
+        onOpen={() => onOpenModal(event.id)}
+        className="mx-4 mb-4"
+      />
+    );
+  }
+
+  // Show entry button if no picks yet
+  return (
+    <div className="px-4 pb-4">
+      <button
+        onClick={() => onOpenModal(event.id)}
+        className="w-full flex items-center justify-between px-5 py-4 rounded-[2rem] border-2 border-dashed border-primary/30 bg-primary/5 text-left hover:border-primary/60 hover:bg-primary/10 transition-all group"
+      >
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
+            <Trophy className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <p className="text-[11px] font-black uppercase italic text-primary leading-none">My Selection</p>
+            <p className="text-[8px] font-bold text-slate-400 uppercase mt-0.5">Pick your Top {event.qualifierCount ?? 6} qualifiers</p>
+          </div>
+        </div>
+        <Badge className="bg-primary text-white font-black text-[9px] border-none shrink-0">
+          +10,000 Shards
+        </Badge>
+      </button>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function EventsPage() {
   const router = useRouter()
+  const [activeSelectionEventId, setActiveSelectionEventId] = useState<string | null>(null)
+
+  const activeEvent = events.find(e => e.id === activeSelectionEventId)
+
   return (
     <div className="space-y-6 pb-12">
       <header className="sticky top-4 z-40 bg-white/80 backdrop-blur-lg border rounded-[2.5rem] p-4 shadow-2xl flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-10 w-10 rounded-full"><ChevronLeft /></Button>
-        <div><h1 className="text-xl font-black uppercase italic tracking-tighter">QUALIFYING MAP</h1><p className="text-[8px] font-black uppercase text-primary tracking-widest">Te Matatini 2027 Road</p></div>
+        <div>
+          <h1 className="text-xl font-black uppercase italic tracking-tighter">QUALIFYING MAP</h1>
+          <p className="text-[8px] font-black uppercase text-primary tracking-widest">Te Matatini 2027 Road</p>
+        </div>
       </header>
+
       <div className="space-y-6 px-1">
         {events.map((event) => (
           <Card key={event.id} className="overflow-hidden border bg-white shadow-lg rounded-[2.5rem] mx-1">
+            {/* Hero image */}
             <div className="relative h-44 w-full">
               <Image src={event.image} alt={event.name} fill className="object-cover opacity-60" />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-              <div className="absolute top-4 right-4"><Badge className="bg-white/10 text-white font-black text-[9px] uppercase"><EventCountdown startDate={event.startDate} /> {event.status === 'Closed Arena' && 'CLOSED'}</Badge></div>
-              <div className="absolute bottom-5 left-6 right-6"><h3 className="text-2xl font-black uppercase italic text-white leading-tight">{event.name}</h3><div className="flex flex-col gap-1 text-[9px] font-black text-white uppercase"><div className="flex items-center gap-1"><MapPin className="w-3 h-3 text-primary" /> {event.location}</div></div></div>
-            </div>
-            <CardContent className="p-0 bg-white">
-              <Accordion type="single" collapsible><AccordionItem value="roopu" className="border-none">
-                <AccordionTrigger className="px-6 py-4 hover:bg-slate-50"><div className="flex items-center gap-2"><ListOrdered className="w-5 h-5 text-primary" /><span className="text-[10px] font-black uppercase">Stage Order</span></div></AccordionTrigger>
-                <AccordionContent className="px-4 pb-6">{event.roopu.map(g => (
-                  <div key={g.id} className="p-4 bg-slate-50 rounded-2xl border mb-2 flex items-center justify-between">
-                    <div><h4 className="text-[12px] font-black uppercase italic">{g.name}</h4><p className="text-[9px] font-bold text-muted-foreground uppercase">{g.time}</p></div>
-                    <Link href={`/performance/${g.id}`}><Button size="sm" className="h-9 px-4 rounded-full font-black text-[10px] uppercase">VIEW</Button></Link>
+              <div className="absolute top-4 right-4">
+                <Badge className="bg-white/10 text-white font-black text-[9px] uppercase">
+                  <EventCountdown startDate={event.startDate} />
+                  {event.status === 'Closed Arena' && 'CLOSED'}
+                </Badge>
+              </div>
+              <div className="absolute bottom-5 left-6 right-6">
+                <h3 className="text-2xl font-black uppercase italic text-white leading-tight">{event.name}</h3>
+                <div className="flex flex-col gap-1 text-[9px] font-black text-white uppercase">
+                  <div className="flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-primary" /> {event.location}
                   </div>
-                ))}</AccordionContent>
-              </AccordionItem></Accordion>
+                </div>
+              </div>
+            </div>
+
+            <CardContent className="p-0 bg-white">
+              {/* My Selection entry point */}
+              <EventSelectionSection event={event} onOpenModal={setActiveSelectionEventId} />
+
+              {/* Stage order accordion */}
+              <Accordion type="single" collapsible>
+                <AccordionItem value="roopu" className="border-none">
+                  <AccordionTrigger className="px-6 py-4 hover:bg-slate-50">
+                    <div className="flex items-center gap-2">
+                      <ListOrdered className="w-5 h-5 text-primary" />
+                      <span className="text-[10px] font-black uppercase">Stage Order</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-6">
+                    {event.roopu.map(g => (
+                      <div key={g.id} className="p-4 bg-slate-50 rounded-2xl border mb-2 flex items-center justify-between">
+                        <div>
+                          <h4 className="text-[12px] font-black uppercase italic">{g.name}</h4>
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase">{g.time}</p>
+                        </div>
+                        <Link href={`/performance/${g.id}`}>
+                          <Button size="sm" className="h-9 px-4 rounded-full font-black text-[10px] uppercase">VIEW</Button>
+                        </Link>
+                      </div>
+                    ))}
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {/* My Selection Modal */}
+      {activeEvent && (
+        <MySelectionModal
+          isOpen={!!activeSelectionEventId}
+          onClose={() => setActiveSelectionEventId(null)}
+          eventId={activeEvent.id}
+          eventName={activeEvent.name}
+          roopu={activeEvent.roopu}
+          qualifierCount={activeEvent.qualifierCount ?? 6}
+          isClosed={activeEvent.status === 'Closed Arena'}
+        />
+      )}
     </div>
   )
 }

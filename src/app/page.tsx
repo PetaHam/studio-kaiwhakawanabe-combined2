@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { 
   Trophy, 
   BarChart3, Heart, ChevronRight, Gavel, 
-  Vote, History as HistoryIcon, Check, Flame, Zap, LayoutDashboard, X, ShoppingCart, MessageSquare, Layers, ShieldCheck, Swords, Users, Calendar, GraduationCap, Settings as SettingsIcon, UserCircle, Copy, User, Lock
+  Vote, History as HistoryIcon, Check, Flame, Zap, LayoutDashboard, X, ShoppingCart, MessageSquare, Layers, ShieldCheck, Swords, Users, Calendar, GraduationCap, Settings as SettingsIcon, UserCircle, Copy, User, Lock, ListChecks
 } from 'lucide-react'
 import { 
   AlertDialog, 
@@ -31,7 +31,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection, useAuth } from '@/firebase'
-import { doc, collection, query, orderBy, limit, serverTimestamp, increment, arrayUnion, where } from 'firebase/firestore'
+import { doc, collection, query, orderBy, limit, serverTimestamp, increment, arrayUnion, where, getDoc } from 'firebase/firestore'
 import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates'
 import { toast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -43,6 +43,122 @@ import { FollowGroupsModal } from '@/components/FollowGroupsModal'
 import { JudgesHonourCard, JudgesHonourModal } from '@/components/JudgesModal'
 
 const IS_SEASON_ACTIVE = true;
+
+// Active events to show crowd picks for
+const ACTIVE_EVENT_ID = 'te-whenua-moemoea-2026';
+const ACTIVE_EVENT_NAME = 'Te Whenua Moemoeā Regional';
+
+const ROOPU_NAMES: Record<string, string> = {
+  'apanui': 'Te Whānau-a-Apanui',
+  'ohinemataroa': 'Ōhinemataroa ki Ruatāhuna',
+  'atawhai': 'Te Atawhai Puumananawa',
+  'raranga': 'Te Raranga Whānui',
+  'hau-tawhiti': 'Te Hau Tawhiti',
+};
+
+function MySelectionCrowdSection() {
+  const db = useFirestore();
+  const [picks, setPicks] = useState<{ name: string; count: number }[]>([]);
+  const [participants, setParticipants] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'selectionLeaderboard', ACTIVE_EVENT_ID));
+        if (snap.exists()) {
+          const data = snap.data();
+          const raw: Record<string, number> = data.topPicks ?? {};
+          const sorted = Object.entries(raw)
+            .map(([id, count]) => ({ name: ROOPU_NAMES[id] ?? id, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 3);
+          setPicks(sorted);
+          setParticipants(data.participantCount ?? 0);
+        }
+      } catch (_) {}
+      setIsLoading(false);
+    };
+    load();
+  }, [db]);
+
+  const max = picks[0]?.count ?? 1;
+
+  return (
+    <section className="px-1 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="space-y-0.5">
+          <h2 className="text-sm font-black uppercase italic tracking-tight text-slate-950 dark:text-white flex items-center gap-2">
+            <ListChecks className="w-4 h-4 text-primary" /> MY SELECTION
+          </h2>
+          <p className="text-[7px] font-black text-slate-400 uppercase tracking-[0.3em]">CROWD CONSENSUS · TOP 3 PICKS</p>
+        </div>
+        <Link href="/leaderboard">
+          <Button variant="ghost" size="sm" className="h-8 px-3 rounded-full text-[9px] font-black uppercase text-primary hover:bg-primary/10">
+            Full Board <ChevronRight className="w-3 h-3 ml-1" />
+          </Button>
+        </Link>
+      </div>
+
+      <Card className="border border-slate-200 bg-white shadow-sm p-5 rounded-[2rem] space-y-4">
+        {/* Event label */}
+        <div className="flex items-center justify-between">
+          <p className="text-[9px] font-black uppercase italic text-slate-500">{ACTIVE_EVENT_NAME}</p>
+          {participants > 0 && (
+            <Badge className="bg-primary/10 text-primary font-black text-[8px] border-none">
+              <Users className="w-2.5 h-2.5 mr-1" />{participants} selectors
+            </Badge>
+          )}
+        </div>
+
+        {isLoading ? (
+          <div className="h-12 flex items-center justify-center">
+            <div className="h-1 w-24 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-primary animate-[progress_2s_infinite]" />
+            </div>
+          </div>
+        ) : picks.length === 0 ? (
+          <div className="text-center py-4 space-y-2">
+            <p className="text-[9px] font-black uppercase text-slate-300">Be the first to submit your selection!</p>
+            <Link href="/events">
+              <Button size="sm" className="h-9 px-5 rounded-full font-black text-[9px] uppercase">
+                Pick Your Selection
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {picks.map((pick, i) => {
+              const pct = Math.round((pick.count / max) * 100);
+              return (
+                <div key={pick.name} className="flex items-center gap-3">
+                  <div className={cn(
+                    'h-6 w-6 rounded-full flex items-center justify-center font-black text-[9px] shrink-0',
+                    i === 0 ? 'bg-yellow-400 text-yellow-900' :
+                      i === 1 ? 'bg-slate-300 text-slate-700' : 'bg-amber-600 text-amber-50'
+                  )}>{i + 1}</div>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex justify-between items-center">
+                      <p className="text-[10px] font-black uppercase italic text-slate-900 truncate">{pick.name}</p>
+                      <span className="text-[9px] font-black text-primary ml-2 tabular-nums">{pick.count}</span>
+                    </div>
+                    <Progress value={pct} className="h-1 bg-slate-100" indicatorClassName="bg-primary" />
+                  </div>
+                </div>
+              );
+            })}
+            <Link href="/events" className="block pt-1">
+              <Button variant="outline" size="sm" className="w-full h-9 rounded-full text-[9px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5">
+                Submit My Selection
+              </Button>
+            </Link>
+          </div>
+        )}
+      </Card>
+    </section>
+  );
+}
+
 
 const JUDGE_QUOTES = [
   "May ye judge fairly and true… or y'know, just go full Reddit mod and ban whoever hurt your feelings that day.",
@@ -507,17 +623,17 @@ export default function Home() {
                 </CardContent>
               </Card>
             </Link>
-            <Link href="/profile">
-              <Card id="tour-settings-card" className="bg-white border border-slate-200 shadow-sm hover:border-primary/30 transition-all rounded-[2.5rem] overflow-hidden group">
+            <Link href="/leaderboard">
+              <Card className="bg-white border border-slate-200 shadow-sm hover:border-primary/30 transition-all rounded-[2.5rem] overflow-hidden group">
                 <CardContent className="p-8 text-center space-y-4">
                   <div className="flex justify-center">
                     <div className="p-5 rounded-[1.5rem] bg-slate-50 border border-slate-100 shadow-inner group-hover:bg-primary/5 transition-colors">
-                      <SettingsIcon className="w-7 h-7 text-primary" />
+                      <ListChecks className="w-7 h-7 text-primary" />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-[11px] font-black text-slate-950 dark:text-white italic uppercase tracking-[0.2em] leading-none">SETTINGS</h3>
-                    <p className="text-[8px] font-bold text-slate-400 uppercase leading-tight tracking-wider px-2">Manage your persona, theme, and tactical preferences.</p>
+                    <h3 className="text-[11px] font-black text-slate-950 dark:text-white italic uppercase tracking-[0.2em] leading-none">SELECTION</h3>
+                    <p className="text-[8px] font-bold text-slate-400 uppercase leading-tight tracking-wider px-2">Pick qualifiers. Earn Mana Shards. See the crowd's picks.</p>
                   </div>
                 </CardContent>
               </Card>
@@ -674,6 +790,8 @@ export default function Home() {
           </div>
         </Card>
       </section>
+
+      <MySelectionCrowdSection />
 
       <section className="px-1 space-y-6">
         <div className="text-center space-y-1">

@@ -57,7 +57,29 @@ service cloud.firestore {
     match /teams/{teamId} {
       allow get, list: if true;
     }
-    
-    // Security Policy v1.6: Enabled self-management for party members
+
+    // --- My Selection ---
+    // Users can read/write their own selection docs (keyed by eventId_userId)
+    match /userSelections/{selectionId} {
+      allow get, list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid
+                    && !resource.data.scored; // cannot change after scoring
+      allow delete: if false; // selections are permanent records
+    }
+
+    // --- Event Results (admin-managed, read-only for clients) ---
+    match /eventResults/{eventId} {
+      allow get, list: if true;   // public read so scoring hook can fetch
+      allow write: if false;      // only writable via Firebase console / admin SDK
+    }
+
+    // --- Selection Leaderboard (aggregated crowd picks) ---
+    match /selectionLeaderboard/{eventId} {
+      allow get, list: if true;
+      allow write: if isSignedIn(); // users write their share to update crowd count
+    }
+
+    // Security Policy v1.7: My Selection feature added
   }
 }
