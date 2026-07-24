@@ -16,6 +16,10 @@ The harness:
   4. Verifies EVERY codec round-trips bit-exactly (including NaN / inf / -0.0).
   5. Emits the [MEASURE] table (Markdown + CSV + JSON) and a median-based
      verdict against the patent viability threshold.
+  6. Runs a stage-attribution ablation that toggles each pipeline stage
+     (predictor selection, bit-plane transpose, occupancy mask) in isolation,
+     quantifying how many BPV each stage actually contributes -- evidence for
+     which parts of the pipeline carry the novelty (--no-ablation to skip).
 
 Baselines fall into two tiers:
   * Cited prior art (self-contained, numpy+stdlib): Gorilla, Chimp128, Elf+,
@@ -271,9 +275,34 @@ class InventionCodec:
     OR of all residuals in the block (== the occupancy mask itself).
     """
 
-    def __init__(self, block_size: int = 128):
+    def __init__(self, block_size: int = 128, fixed_pid: int | None = None,
+                 use_mask: bool = True):
         assert block_size in (64, 128, 256)
         self.N = block_size
+        # Ablation toggles:
+        #   fixed_pid : force a single predictor (0/1/2) instead of best-of-3,
+        #               to isolate the value of per-block predictor SELECTION.
+        #   use_mask  : when False, every one of the 64 bit-planes is emitted
+        #               (no occupancy mask, no plane skipping), to isolate the
+        #               value of the OCCUPANCY MASK -- the bit-plane transpose
+        #               on its own is a pure permutation and cannot compress.
+        self.fixed_pid = fixed_pid
+        self.use_mask = use_mask
+
+    def _select(self, vb, p_all, s, e, blen):
+        if self.fixed_pid is not None:
+            pid = self.fixed_pid
+            res = vb[s:e] ^ p_all[pid][s:e]
+            mask = int(np.bitwise_or.reduce(res)) if blen else 0
+            return pid, res, mask
+        best = None  # (cost, pid, residuals, mask)
+        for pid in range(3):
+            res = vb[s:e] ^ p_all[pid][s:e]
+            mask = int(np.bitwise_or.reduce(res)) if blen else 0
+            cost = bin(mask).count("1")
+            if best is None or cost < best[0]:
+                best = (cost, pid, res, mask)
+        return best[1], best[2], best[3]
 
     def encode(self, values: np.ndarray,
                predbits: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None) -> bytes:
@@ -292,23 +321,21 @@ class InventionCodec:
         for s in range(0, n, N):
             e = min(s + N, n)
             blen = e - s
-            best = None  # (cost, pid, residuals, mask)
-            for pid in range(3):
-                res = vb[s:e] ^ p_all[pid][s:e]
-                mask = int(np.bitwise_or.reduce(res)) if blen else 0
-                cost = bin(mask).count("1")
-                if best is None or cost < best[0]:
-                    best = (cost, pid, res, mask)
-            _, pid, res, mask = best
+            pid, res, mask = self._select(vb, p_all, s, e, blen)
 
             bw.write_bits(pid, 8)
-            bw.write_bits(mask, 64)
+            if self.use_mask:
+                bw.write_bits(mask, 64)
+                emit_mask = mask
+            else:
+                # No mask stored; every plane is emitted regardless of content.
+                emit_mask = (1 << 64) - 1
 
-            # Emit only occupied planes, each exactly `blen` bits, MSB = res[0].
+            # Emit planes, each exactly `blen` bits, MSB = res[0].
             npad = (blen + 7) // 8
             shift = npad * 8 - blen
             for k in range(64):
-                if (mask >> k) & 1:
+                if (emit_mask >> k) & 1:
                     bitk = ((res >> np.uint64(k)) & U1).astype(np.uint8)
                     packed = np.packbits(bitk)  # right-padded to a byte multiple
                     val = int.from_bytes(packed.tobytes(), "big") >> shift
@@ -329,7 +356,10 @@ class InventionCodec:
             e = min(s + N, n)
             blen = e - s
             pid = br.read_bits(8)
-            mask = br.read_bits(64)
+            if self.use_mask:
+                mask = br.read_bits(64)
+            else:
+                mask = (1 << 64) - 1
 
             res = np.zeros(blen, dtype=np.uint64)
             nb = (blen + 7) // 8
@@ -559,8 +589,10 @@ class ElfPlusCodec:
         1 | lead:6 | mlen:6 | meaningful   -> non-zero residual
     """
 
-    def __init__(self, block_size: int = 128):
+    def __init__(self, block_size: int = 128, fixed_pid: int | None = None):
         self.N = block_size
+        # fixed_pid forces one predictor (ablation): isolates predictor SELECTION.
+        self.fixed_pid = fixed_pid
 
     @staticmethod
     def _block_cost(res: np.ndarray) -> int:
@@ -586,13 +618,17 @@ class ElfPlusCodec:
         N = self.N
         for s in range(0, n, N):
             e = min(s + N, n)
-            best = None  # (cost, pid, res)
-            for pid in range(3):
+            if self.fixed_pid is not None:
+                pid = self.fixed_pid
                 res = vb[s:e] ^ p_all[pid][s:e]
-                cost = self._block_cost(res)
-                if best is None or cost < best[0]:
-                    best = (cost, pid, res)
-            _, pid, res = best
+            else:
+                best = None  # (cost, pid, res)
+                for pid in range(3):
+                    res = vb[s:e] ^ p_all[pid][s:e]
+                    cost = self._block_cost(res)
+                    if best is None or cost < best[0]:
+                        best = (cost, pid, res)
+                _, pid, res = best
             bw.write_bits(pid, 2)
             for r in res.tolist():
                 r = int(r)
@@ -843,6 +879,103 @@ def benchmark_dataset(name, values):
 
 
 # ---------------------------------------------------------------------------
+# Stage-attribution ablation
+# ---------------------------------------------------------------------------
+# Block size held fixed for a controlled comparison of the transpose configs.
+ABLATION_N = 64
+# The ablation round-trips five codec variants per corpus; BPV is essentially
+# scale-invariant for these signals, so it runs on a bounded prefix to stay
+# fast while remaining representative (and every variant is still verified
+# bit-exact on that prefix).
+ABLATION_SAMPLES = 25_000
+
+# key, human label, codec factory. Each codec exposes encode(values, predbits)
+# and decode(bytes). The configs toggle exactly one pipeline stage at a time.
+ABLATION_CONFIGS = [
+    ("pred_p0_pv",   "P0 - per-value",
+     lambda: ElfPlusCodec(128, fixed_pid=0)),
+    ("pred_best_pv", "best-pred - per-value (=Elf+)",
+     lambda: ElfPlusCodec(128, fixed_pid=None)),
+    ("tp_nomask",    "best-pred - transpose, NO mask",
+     lambda: InventionCodec(ABLATION_N, fixed_pid=None, use_mask=False)),
+    ("tpmask_p0",    "P0 - transpose+mask",
+     lambda: InventionCodec(ABLATION_N, fixed_pid=0, use_mask=True)),
+    ("tpmask_best",  "best-pred - transpose+mask (Invention)",
+     lambda: InventionCodec(ABLATION_N, fixed_pid=None, use_mask=True)),
+]
+
+
+def run_ablation(datasets):
+    """For each corpus, encode+decode under each single-stage-toggled config and
+    record BPV (bit-exact round-trip asserted for every config). Runs on a
+    bounded prefix of each corpus (see ABLATION_SAMPLES)."""
+    table = {}
+    sample_size = 0
+    for name, values in datasets.items():
+        sub = values[:ABLATION_SAMPLES]
+        sample_size = max(sample_size, sub.size)
+        predbits = build_prediction_bits(sub.astype(np.float64, copy=False))
+        row = {}
+        for key, _label, factory in ABLATION_CONFIGS:
+            codec = factory()
+            comp = codec.encode(sub, predbits)
+            decoded = codec.decode(comp)
+            assert_lossless(sub, decoded, f"[ablation:{key}] {name}")
+            row[key] = (len(comp) * 8) / sub.size
+        table[name] = row
+    return sample_size, table
+
+
+def print_ablation(sample_size, table):
+    labels = {k: lbl for k, lbl, _ in ABLATION_CONFIGS}
+    keys = [k for k, _, _ in ABLATION_CONFIGS]
+
+    print(f"\n# Stage-Attribution Ablation (BPV; block size N={ABLATION_N}, "
+          f"{sample_size}-sample prefix, controlled)\n")
+    print("Each column toggles ONE stage of the Invention pipeline, so the "
+          "contribution of predictor selection, the bit-plane transpose and "
+          "the occupancy mask can be read off directly. Reference: raw float64 "
+          "= 64.00 BPV.\n")
+    print("| Dataset | " + " | ".join(labels[k] for k in keys) + " |")
+    print("|" + "---|" * (len(keys) + 1))
+    for name, row in table.items():
+        print("| " + name + " | " + " | ".join(fmt(row[k]) for k in keys) + " |")
+
+    def med(fn):
+        return float(np.median([fn(r) for r in table.values()]))
+
+    # Positive BPV delta => that stage REDUCES size (helps).
+    pred_sel_pv = med(lambda r: r["pred_p0_pv"] - r["pred_best_pv"])
+    pred_sel_tp = med(lambda r: r["tpmask_p0"] - r["tpmask_best"])
+    mask_gain = med(lambda r: r["tp_nomask"] - r["tpmask_best"])
+    tp_vs_pv = med(lambda r: r["pred_best_pv"] - r["tpmask_best"])
+
+    print("\n**Per-stage contribution (median BPV reduction across corpora; "
+          "positive = the stage helps):**\n")
+    print(f"- Predictor SELECTION, per-value coder     : {pred_sel_pv:+.2f} BPV")
+    print(f"- Predictor SELECTION, transpose coder     : {pred_sel_tp:+.2f} BPV")
+    print(f"- OCCUPANCY MASK vs emitting all 64 planes : {mask_gain:+.2f} BPV")
+    print(f"- Transpose+mask vs per-value coding (same predictor): "
+          f"{tp_vs_pv:+.2f} BPV")
+    print("\nReading: the bit-plane transpose on its own is a permutation and "
+          "compresses nothing (the 'NO mask' column sits at ~64 BPV); its entire "
+          "benefit is realised through the occupancy mask. The transpose+mask "
+          "vs per-value delta is the Invention's genuinely novel contribution "
+          "over Elf+-style coding -- positive only where it is positive above.")
+    return {
+        "block_size": ABLATION_N,
+        "sample_size": sample_size,
+        "per_dataset_bpv": table,
+        "median_stage_contribution_bpv": {
+            "predictor_selection_per_value": pred_sel_pv,
+            "predictor_selection_transpose": pred_sel_tp,
+            "occupancy_mask": mask_gain,
+            "transpose_mask_vs_per_value": tp_vs_pv,
+        },
+    }
+
+
+# ---------------------------------------------------------------------------
 # Output formatting
 # ---------------------------------------------------------------------------
 def fmt(x, nd=3):
@@ -971,7 +1104,7 @@ def _codec_order(all_results):
     return [r["codec"] for r in first]
 
 
-def save_outputs(all_results, stats, verdict, outdir):
+def save_outputs(all_results, stats, verdict, ablation, outdir):
     json_path = os.path.join(outdir, "benchmark_results.json")
     csv_path = os.path.join(outdir, "benchmark_results.csv")
 
@@ -979,6 +1112,7 @@ def save_outputs(all_results, stats, verdict, outdir):
         "seed": SEED,
         "verdict": verdict,
         "summary_statistics": stats,
+        "ablation": ablation,
         "datasets": all_results,
     }
     with open(json_path, "w") as fh:
@@ -1042,6 +1176,8 @@ def main(argv=None):
                         help="Samples per synthetic dataset (default 100000).")
     parser.add_argument("--outdir", type=str, default=".",
                         help="Directory for JSON/CSV outputs.")
+    parser.add_argument("--no-ablation", action="store_true",
+                        help="Skip the stage-attribution ablation study.")
     args = parser.parse_args(argv)
 
     np.random.seed(SEED)
@@ -1076,6 +1212,12 @@ def main(argv=None):
     print_verdict(all_results, stats)
     print_throughput_note(all_results)
 
+    ablation = None
+    if not args.no_ablation:
+        print("\n  running stage-attribution ablation ...", flush=True)
+        abl_size, abl_table = run_ablation(datasets)
+        ablation = print_ablation(abl_size, abl_table)
+
     # Section 7.8.1 viability threshold.
     #
     # The criterion is now a MEDIAN compression-ratio improvement, and the
@@ -1102,7 +1244,7 @@ def main(argv=None):
         "viable": bool(viable),
     }
 
-    json_path, csv_path = save_outputs(all_results, stats, verdict, args.outdir)
+    json_path, csv_path = save_outputs(all_results, stats, verdict, ablation, args.outdir)
     print(f"\nRaw results written to:\n  {json_path}\n  {csv_path}")
 
     print("\n" + "=" * 72)
