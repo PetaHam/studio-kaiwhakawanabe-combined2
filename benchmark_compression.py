@@ -14,8 +14,25 @@ The harness:
   3. Generates realistic synthetic time-series corpora (or reads a raw
      float64 binary file via --file).
   4. Verifies EVERY codec round-trips bit-exactly (including NaN / inf / -0.0).
-  5. Emits the [MEASURE] table (Markdown + CSV + JSON) and a final
-     Invention-vs-Elf+ verdict against the patent viability threshold.
+  5. Emits the [MEASURE] table (Markdown + CSV + JSON) and a median-based
+     verdict against the patent viability threshold.
+
+Baselines fall into two tiers:
+  * Cited prior art (self-contained, numpy+stdlib): Gorilla, Chimp128, Elf+,
+    and DEFLATE/zlib.
+  * Real-world state of the art (optional, imported only if installed):
+    Zstandard (level 22), LZ4-hc, and Blosc2 with the BITSHUFFLE filter. These
+    are the codecs the Invention must actually beat to be defensible. Blosc2's
+    bitshuffle is the closest prior art to the Invention's bit-plane transpose,
+    so it is the honest bar for the core claim.
+
+Reporting uses the MEDIAN (not the mean) so a single trivially-compressible
+corpus cannot inflate the headline, and counts the corpora the Invention
+actually wins. The viability threshold (Section 7.8.1) is a median BPV
+improvement over the BEST prior-art baseline plus a majority of corpora won.
+The decode-speedup claim has been REMOVED from the criterion: the pure-Python
+decoders are slower than the compiled C baselines, so throughput is reported
+for information only and must not be quoted as a performance claim.
 
 Design constraints honoured:
   * Losslessness    : every encoder has a decoder; round-trip is asserted at the
@@ -47,6 +64,26 @@ import time
 import zlib
 
 import numpy as np
+
+# Optional real-world state-of-the-art lossless baselines. The core harness is
+# self-contained (numpy + stdlib); these extend the comparison to the codecs a
+# float-compression patent must actually out-perform to be defensible. They are
+# imported opportunistically and skipped cleanly when not installed.
+try:
+    import zstandard as _zstd
+    _HAVE_ZSTD = True
+except ImportError:
+    _HAVE_ZSTD = False
+try:
+    import lz4.frame as _lz4frame
+    _HAVE_LZ4 = True
+except ImportError:
+    _HAVE_LZ4 = False
+try:
+    import blosc2 as _blosc2
+    _HAVE_BLOSC2 = True
+except ImportError:
+    _HAVE_BLOSC2 = False
 
 SEED = 42
 UMASK64 = (1 << 64) - 1
@@ -612,6 +649,53 @@ class ZlibCodec:
 
 
 # ---------------------------------------------------------------------------
+# EXTENDED BASELINES: real-world state of the art (optional)
+# ---------------------------------------------------------------------------
+class ZstdCodec:
+    """Zstandard at maximum level -- the general-purpose lossless benchmark."""
+
+    LEVEL = 22
+
+    def encode(self, values: np.ndarray) -> bytes:
+        raw = values.astype(np.float64, copy=False).tobytes()
+        return _zstd.ZstdCompressor(level=self.LEVEL).compress(raw)
+
+    def decode(self, data: bytes) -> np.ndarray:
+        raw = _zstd.ZstdDecompressor().decompress(data)
+        return np.frombuffer(raw, dtype=np.float64).copy()
+
+
+class Lz4Codec:
+    """LZ4 (high-compression frame mode) -- the speed-oriented benchmark."""
+
+    def encode(self, values: np.ndarray) -> bytes:
+        raw = values.astype(np.float64, copy=False).tobytes()
+        return _lz4frame.compress(raw, compression_level=16)
+
+    def decode(self, data: bytes) -> np.ndarray:
+        return np.frombuffer(_lz4frame.decompress(data), dtype=np.float64).copy()
+
+
+class Blosc2Codec:
+    """Blosc2 with the BITSHUFFLE filter + Zstd. This is the closest prior art
+    to the Invention's bit-plane transposition: bitshuffle rearranges data by
+    bit position across the array (a bit-plane transpose) before entropy coding.
+    Beating this is the real bar for the Invention's core claim."""
+
+    def encode(self, values: np.ndarray) -> bytes:
+        arr = np.ascontiguousarray(values, dtype=np.float64)
+        cparams = _blosc2.CParams(
+            clevel=9,
+            codec=_blosc2.Codec.ZSTD,
+            filters=[_blosc2.Filter.BITSHUFFLE],
+        )
+        return _blosc2.pack_array2(arr, cparams=cparams)
+
+    def decode(self, data: bytes) -> np.ndarray:
+        return np.asarray(_blosc2.unpack_array2(data), dtype=np.float64)
+
+
+# ---------------------------------------------------------------------------
 # Test data
 # ---------------------------------------------------------------------------
 def generate_datasets(n: int = 100_000) -> dict[str, np.ndarray]:
@@ -745,6 +829,16 @@ def benchmark_dataset(name, values):
 
     zl = ZlibCodec()
     results.append(bench_codec("Zlib", zl.encode, zl.decode, values))
+
+    if _HAVE_ZSTD:
+        zs = ZstdCodec()
+        results.append(bench_codec("Zstd-22", zs.encode, zs.decode, values))
+    if _HAVE_LZ4:
+        l4 = Lz4Codec()
+        results.append(bench_codec("LZ4-hc", l4.encode, l4.decode, values))
+    if _HAVE_BLOSC2:
+        bl = Blosc2Codec()
+        results.append(bench_codec("Blosc2-bitshuffle", bl.encode, bl.decode, values))
     return results
 
 
@@ -772,44 +866,119 @@ def print_markdown(all_results):
         print()
 
 
-def print_verdict(all_results):
-    print("\n# Final Verdict: Invention vs Elf+\n")
-    header = ("| Dataset | Invention BPV | Elf+ BPV | Improvement % | "
-              "Invention Dec (MB/s) | Elf+ Dec (MB/s) | Speedup |")
-    print(header)
-    print("|---------|--------------:|---------:|--------------:|"
-          "---------------------:|----------------:|--------:|")
+def _dist(values):
+    """min / median / mean / max of a list, robust to emptiness."""
+    if not values:
+        return {"min": 0.0, "median": 0.0, "mean": 0.0, "max": 0.0}
+    a = np.asarray(values, dtype=np.float64)
+    return {"min": float(a.min()), "median": float(np.median(a)),
+            "mean": float(a.mean()), "max": float(a.max())}
 
-    improvements = []
-    speedups = []
+
+def compute_verdict_stats(all_results):
+    """Per-dataset comparison of the Invention against (i) Elf+ (the patent's
+    cited closest prior art) and (ii) the single best-performing prior-art
+    lossless baseline present in the run (which may be Blosc2/Zstd). Returns a
+    stats dict driven by the MEDIAN, not the mean, so a single easy corpus
+    (e.g. Constant) cannot dominate the headline number."""
+    per_dataset = []
+    impr_vs_elf = []
+    impr_vs_best = []
+    wins_vs_elf = 0
+    wins_vs_best = 0
+
     for name, results in all_results.items():
         inv = next(r for r in results if r["codec"] == "Invention")
         elf = next(r for r in results if r["codec"] == "Elf+")
-        improvement = ((elf["bpv"] - inv["bpv"]) / elf["bpv"] * 100.0) if elf["bpv"] else 0.0
-        speedup = (inv["decode_mbps"] / elf["decode_mbps"]) if elf["decode_mbps"] else float("inf")
-        improvements.append(improvement)
-        speedups.append(speedup)
-        print(f"| {name} | {fmt(inv['bpv'])} | {fmt(elf['bpv'])} | "
-              f"{improvement:+.1f}% | {fmt(inv['decode_mbps'],1)} | "
-              f"{fmt(elf['decode_mbps'],1)} | {fmt(speedup,2)}x |")
+        priors = [r for r in results if r["codec"] != "Invention"]
+        best = min(priors, key=lambda r: r["bpv"])
 
-    mean_impr = float(np.mean(improvements))
-    mean_speed = float(np.mean(speedups))
-    print(f"\n**Mean BPV improvement vs Elf+:** {mean_impr:+.2f}%")
-    print(f"**Mean decode speedup vs Elf+:** {mean_speed:.2f}x")
-    return mean_impr, mean_speed
+        e = ((elf["bpv"] - inv["bpv"]) / elf["bpv"] * 100.0) if elf["bpv"] else 0.0
+        b = ((best["bpv"] - inv["bpv"]) / best["bpv"] * 100.0) if best["bpv"] else 0.0
+        impr_vs_elf.append(e)
+        impr_vs_best.append(b)
+        wins_vs_elf += int(inv["bpv"] < elf["bpv"])
+        wins_vs_best += int(inv["bpv"] < best["bpv"])
+        per_dataset.append({
+            "dataset": name,
+            "invention_bpv": inv["bpv"],
+            "elf_bpv": elf["bpv"],
+            "improvement_vs_elf_pct": e,
+            "best_baseline": best["codec"],
+            "best_baseline_bpv": best["bpv"],
+            "improvement_vs_best_pct": b,
+        })
+
+    n = len(per_dataset)
+    return {
+        "n_datasets": n,
+        "per_dataset": per_dataset,
+        "improvement_vs_elf": _dist(impr_vs_elf),
+        "improvement_vs_best_baseline": _dist(impr_vs_best),
+        "wins_vs_elf": wins_vs_elf,
+        "wins_vs_best_baseline": wins_vs_best,
+    }
 
 
-def save_outputs(all_results, mean_impr, mean_speed, outdir):
+def print_verdict(all_results, stats):
+    print("\n# Final Verdict: Invention vs Prior Art\n")
+    print("Improvement % is BPV reduction (positive = Invention smaller). "
+          "'Best baseline' is the single strongest prior-art lossless codec "
+          "for that corpus.\n")
+    print("| Dataset | Invention BPV | Elf+ BPV | vs Elf+ | Best baseline | "
+          "Best BPV | vs Best |")
+    print("|---------|--------------:|---------:|--------:|---------------|"
+          "---------:|--------:|")
+    for d in stats["per_dataset"]:
+        print(f"| {d['dataset']} | {fmt(d['invention_bpv'])} | "
+              f"{fmt(d['elf_bpv'])} | {d['improvement_vs_elf_pct']:+.1f}% | "
+              f"{d['best_baseline']} | {fmt(d['best_baseline_bpv'])} | "
+              f"{d['improvement_vs_best_pct']:+.1f}% |")
+
+    n = stats["n_datasets"]
+    e = stats["improvement_vs_elf"]
+    b = stats["improvement_vs_best_baseline"]
+    print(f"\n**BPV improvement vs Elf+ (cited prior art):** "
+          f"median {e['median']:+.2f}%  (mean {e['mean']:+.2f}%, "
+          f"range {e['min']:+.1f}%..{e['max']:+.1f}%); "
+          f"Invention wins {stats['wins_vs_elf']}/{n} corpora.")
+    print(f"**BPV improvement vs best prior-art baseline:** "
+          f"median {b['median']:+.2f}%  (mean {b['mean']:+.2f}%, "
+          f"range {b['min']:+.1f}%..{b['max']:+.1f}%); "
+          f"Invention wins {stats['wins_vs_best_baseline']}/{n} corpora.")
+
+
+def print_throughput_note(all_results):
+    """Decode throughput is an informational, PYTHON-RELATIVE micro-benchmark
+    only. It is NOT part of the viability criterion and must not be quoted as a
+    performance claim: the Invention/Elf+/Gorilla/Chimp decoders are pure-Python
+    scalar loops, whereas Zstd/LZ4/Blosc2/Zlib call optimised C. A real speed
+    claim requires a compiled implementation."""
+    print("\n## Decode throughput (informational; Python-relative, NOT a claim)\n")
+    print("| Dataset | " + " | ".join(
+        c for c in _codec_order(all_results)) + " |")
+    print("|" + "---|" * (1 + len(_codec_order(all_results))))
+    for name, results in all_results.items():
+        by = {r["codec"]: r for r in results}
+        row = [name]
+        for c in _codec_order(all_results):
+            row.append(fmt(by[c]["decode_mbps"], 1) if c in by else "-")
+        print("| " + " | ".join(row) + " |")
+
+
+def _codec_order(all_results):
+    first = next(iter(all_results.values()))
+    return [r["codec"] for r in first]
+
+
+def save_outputs(all_results, stats, verdict, outdir):
     json_path = os.path.join(outdir, "benchmark_results.json")
     csv_path = os.path.join(outdir, "benchmark_results.csv")
 
     payload = {
         "seed": SEED,
-        "summary": {
-            "mean_bpv_improvement_pct_vs_elf": mean_impr,
-            "mean_decode_speedup_vs_elf": mean_speed,
-        },
+        "verdict": verdict,
+        "summary_statistics": stats,
         "datasets": all_results,
     }
     with open(json_path, "w") as fh:
@@ -847,6 +1016,12 @@ def run_edge_case_gate():
          ElfPlusCodec(128).decode),
         ("Zlib", ZlibCodec().encode, ZlibCodec().decode),
     ]
+    if _HAVE_ZSTD:
+        codecs.append(("Zstd-22", ZstdCodec().encode, ZstdCodec().decode))
+    if _HAVE_LZ4:
+        codecs.append(("LZ4-hc", Lz4Codec().encode, Lz4Codec().decode))
+    if _HAVE_BLOSC2:
+        codecs.append(("Blosc2-bitshuffle", Blosc2Codec().encode, Blosc2Codec().decode))
     print("Edge-case round-trip (NaN / +/-inf / -0.0 / non-canonical NaN):")
     for name, enc, dec in codecs:
         decoded = dec(enc(edge))
@@ -897,21 +1072,50 @@ def main(argv=None):
         all_results[name] = benchmark_dataset(name, values)
 
     print_markdown(all_results)
-    mean_impr, mean_speed = print_verdict(all_results)
-
-    json_path, csv_path = save_outputs(all_results, mean_impr, mean_speed, args.outdir)
-    print(f"\nRaw results written to:\n  {json_path}\n  {csv_path}")
+    stats = compute_verdict_stats(all_results)
+    print_verdict(all_results, stats)
+    print_throughput_note(all_results)
 
     # Section 7.8.1 viability threshold.
+    #
+    # The criterion is now a MEDIAN compression-ratio improvement, and the
+    # relevant comparison is against the *best* prior-art lossless baseline in
+    # the run -- not merely Elf+. A patent examiner will cite the strongest
+    # available prior art (which, for the bit-plane idea, includes Blosc2's
+    # bitshuffle filter), so beating only a weaker baseline is not sufficient.
+    # The decode-speedup claim has been removed: it is not supported (the
+    # pure-Python decoders are slower than the C baselines), so it cannot carry
+    # the verdict. A speed claim would require a compiled implementation.
+    med_vs_best = stats["improvement_vs_best_baseline"]["median"]
+    med_vs_elf = stats["improvement_vs_elf"]["median"]
+    n = stats["n_datasets"]
+    majority_best = stats["wins_vs_best_baseline"] > n / 2
+    viable = (med_vs_best > 5.0) and majority_best
+
+    verdict = {
+        "criterion": "median BPV improvement vs BEST prior-art baseline > 5% "
+                     "AND Invention wins a majority of corpora",
+        "median_improvement_vs_best_baseline_pct": med_vs_best,
+        "median_improvement_vs_elf_pct": med_vs_elf,
+        "wins_vs_best_baseline": stats["wins_vs_best_baseline"],
+        "n_datasets": n,
+        "viable": bool(viable),
+    }
+
+    json_path, csv_path = save_outputs(all_results, stats, verdict, args.outdir)
+    print(f"\nRaw results written to:\n  {json_path}\n  {csv_path}")
+
     print("\n" + "=" * 72)
-    viable = (mean_impr > 5.0) or (mean_speed > 3.0)
     if viable:
         print("[STATUS: VIABLE - PROCEED WITH PATENT FILING]")
     else:
         print("[STATUS: NOT VIABLE - REFINE ALGORITHM OR DO NOT FILE]")
-    print(f"  (threshold: BPV improvement > 5%  OR  decode speedup > 3x)")
-    print(f"  observed: mean improvement {mean_impr:+.2f}%, "
-          f"mean speedup {mean_speed:.2f}x")
+    print("  (threshold 7.8.1: median BPV improvement vs BEST prior-art "
+          "baseline > 5%\n   AND Invention wins a majority of corpora)")
+    print(f"  observed: median improvement vs best baseline {med_vs_best:+.2f}% "
+          f"(wins {stats['wins_vs_best_baseline']}/{n});\n"
+          f"            median improvement vs Elf+ {med_vs_elf:+.2f}% "
+          f"(cited prior art, for reference)")
     print("=" * 72)
 
     print(f"\nTotal wall-clock: {time.perf_counter() - t_start:.2f}s")
