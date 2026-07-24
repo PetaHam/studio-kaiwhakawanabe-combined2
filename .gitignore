@@ -75,3 +75,7 @@ firestore-debug.log-e
 *.env
 *.env.*
 .dyad/
+
+# Compression benchmark generated outputs
+benchmark_results.json
+benchmark_results.csv
