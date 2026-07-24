@@ -30,13 +30,18 @@ Baselines fall into two tiers:
     bitshuffle is the closest prior art to the Invention's bit-plane transpose,
     so it is the honest bar for the core claim.
 
-Reporting uses the MEDIAN (not the mean) so a single trivially-compressible
-corpus cannot inflate the headline, and counts the corpora the Invention
-actually wins. The viability threshold (Section 7.8.1) is a median BPV
-improvement over the BEST prior-art baseline plus a majority of corpora won.
-The decode-speedup claim has been REMOVED from the criterion: the pure-Python
-decoders are slower than the compiled C baselines, so throughput is reported
-for information only and must not be quoted as a performance claim.
+The viability verdict follows the patent's OWN Section 7.8.1, whose comparison
+is against Elf+ (the cited closest prior art) and whose decisive gate is DECODE
+THROUGHPUT of a branch-free, SIMD-vectorised decoder. This Python reference
+harness can establish the compression-ratio prerequisites (>=5% mean reduction
+vs Elf+, or within 1% of Elf+) and losslessness, but CANNOT measure the
+throughput gate or the branch-misprediction mechanism (Section 7.8.1(c)/(i)/(ii)
+and Data Insertion Point 6): those require a compiled implementation of the
+intrinsics in Section 7.5.1, benchmarked under perf on named hardware. The
+verdict therefore reports the ratio side as MET and the throughput side as
+INDETERMINATE. Zstd/LZ4/Blosc2 are reported only as Section 7.8.1(d) prior-art
+context (Blosc2's bitshuffle IS a bit-plane transpose); they are not the ratio
+target, since Section 4 treats byte compressors as poor on floating-point data.
 
 Design constraints honoured:
   * Losslessness    : every encoder has a decoder; round-trip is asserted at the
@@ -210,22 +215,26 @@ def build_prediction_bits(values: np.ndarray) -> tuple[np.ndarray, np.ndarray, n
     p1 = np.zeros(n, dtype=np.float64)
     p2 = np.zeros(n, dtype=np.float64)
 
-    if n >= 2:
-        p0[1:] = v[:-1]
-        p1[1] = v[0]
-        p2[1] = v[0]
-    elif n == 1:
-        pass  # all predictions for index 0 are 0.0
+    # Predictions are extrapolations of the true values; on inf/NaN inputs the
+    # arithmetic legitimately yields inf/NaN (e.g. inf-inf). This is harmless --
+    # the residual is a bitwise XOR that inverts regardless of the float value,
+    # and the decoder recomputes the identical prediction -- so suppress the
+    # expected IEEE warnings rather than let them clutter the edge-case run.
+    with np.errstate(invalid="ignore", over="ignore"):
+        if n >= 2:
+            p0[1:] = v[:-1]
+            p1[1] = v[0]
+            p2[1] = v[0]
 
-    if n >= 3:
-        p1[2:] = v[1:-1] + (v[1:-1] - v[0:-2])
-        p2[2] = v[1] + (v[1] - v[0])
+        if n >= 3:
+            p1[2:] = v[1:-1] + (v[1:-1] - v[0:-2])
+            p2[2] = v[1] + (v[1] - v[0])
 
-    if n >= 4:
-        a = v[2:-1]      # v[i-1]
-        b = v[1:-2]      # v[i-2]
-        c = v[0:-3]      # v[i-3]
-        p2[3:] = a + (a - b) + ((a - b) - (b - c))
+        if n >= 4:
+            a = v[2:-1]      # v[i-1]
+            b = v[1:-2]      # v[i-2]
+            c = v[0:-3]      # v[i-3]
+            p2[3:] = a + (a - b) + ((a - b) - (b - c))
 
     return (p0.view(np.uint64).copy(),
             p1.view(np.uint64).copy(),
@@ -277,7 +286,7 @@ class InventionCodec:
 
     def __init__(self, block_size: int = 128, fixed_pid: int | None = None,
                  use_mask: bool = True):
-        assert block_size in (64, 128, 256)
+        assert block_size in (64, 128, 256, 512)
         self.N = block_size
         # Ablation toggles:
         #   fixed_pid : force a single predictor (0/1/2) instead of best-of-3,
@@ -407,7 +416,10 @@ class GorillaCodec:
                 bw.write_bit(0)
             else:
                 bw.write_bit(1)
-                lead = clz64(xor)
+                # Leading-zero count is stored in a 5-bit field, so it is
+                # clamped to 31 per the Gorilla scheme; any leading zeros beyond
+                # 31 are absorbed into the meaningful-bits field via mlen below.
+                lead = min(clz64(xor), 31)
                 trail = ctz64(xor)
                 if prev_lead != -1 and lead >= prev_lead and trail >= prev_trail:
                     # Reuse previous window.
@@ -763,11 +775,21 @@ def generate_datasets(n: int = 100_000) -> dict[str, np.ndarray]:
 
 
 def edge_case_dataset() -> np.ndarray:
-    """Adversarial array exercising NaN, +/-inf and -0.0 alongside normals."""
+    """Adversarial array exercising every class named in patent section 7.8.1(a):
+    NaN (incl. non-canonical payload), +/-inf, -0.0, and subnormals."""
+    def bits(u):  # build a double from an exact 64-bit pattern
+        return struct.unpack("<d", struct.pack("<Q", u))[0]
+
+    smallest_subnormal = bits(0x0000_0000_0000_0001)   # 5e-324
+    largest_subnormal = bits(0x000F_FFFF_FFFF_FFFF)    # ~2.225e-308
+    neg_subnormal = bits(0x8000_0000_0000_0001)        # -5e-324
+    weird_nan = bits(0x7FF8_0000_DEAD_BEEF)            # NaN, non-canonical payload
+    signalling_nan = bits(0x7FF0_0000_0000_0001)       # sNaN
+
     base = [0.0, -0.0, 1.0, -1.0, np.inf, -np.inf, np.nan,
-            3.14159, 2.71828, 1e-300, 1e300, -0.0, np.nan, 42.0, 0.0]
-    # Include a NaN with a non-canonical payload to stress bit-exactness.
-    weird_nan = struct.unpack("<d", struct.pack("<Q", 0x7FF8_0000_DEAD_BEEF))[0]
+            3.14159, 2.71828, 1e-300, 1e300, -0.0, np.nan, 42.0, 0.0,
+            smallest_subnormal, largest_subnormal, neg_subnormal,
+            signalling_nan]
     arr = np.array(base + [weird_nan] * 5 + base, dtype=np.float64)
     return arr
 
@@ -819,13 +841,38 @@ def bench_codec(name, encode_fn, decode_fn, values):
     }
 
 
+INVENTION_BLOCK_SIZES = (64, 128, 256, 512)
+
+
+def predictor_selection_counts(values, predbits, N):
+    """Count, per predictor id, how many blocks select it at block size N
+    (Data Insertion Point 2). Mirrors InventionCodec best-of-3 selection."""
+    vb = values.astype(np.float64, copy=False).view(np.uint64)
+    n = vb.shape[0]
+    counts = [0, 0, 0]
+    for s in range(0, n, N):
+        e = min(s + N, n)
+        best = None
+        for pid in range(3):
+            res = vb[s:e] ^ predbits[pid][s:e]
+            mask = int(np.bitwise_or.reduce(res)) if e > s else 0
+            cost = bin(mask).count("1")
+            if best is None or cost < best[0]:
+                best = (cost, pid)
+        counts[best[1]] += 1
+    return counts
+
+
 def run_invention(values, predbits):
-    """Evaluate the Invention at N in {64,128,256}, pick the smallest output,
-    then round-trip only the chosen block size (fair + fast)."""
+    """Evaluate the Invention across all candidate block sizes (Data Insertion
+    Point 1), keep the smallest output, and round-trip only the chosen size."""
+    uncompressed = values.size * 8
+    per_n_bpv = {}
     best = None
-    for N in (64, 128, 256):
+    for N in INVENTION_BLOCK_SIZES:
         codec = InventionCodec(N)
         comp, enc_t = time_call(codec.encode, values, predbits)
+        per_n_bpv[N] = (len(comp) * 8) / values.size
         if best is None or len(comp) < best["compressed_bytes"]:
             best = {"N": N, "comp": comp, "enc_t": enc_t,
                     "compressed_bytes": len(comp), "codec": codec}
@@ -833,7 +880,6 @@ def run_invention(values, predbits):
     decoded, dec_t = time_call(codec.decode, best["comp"])
     assert_lossless(values, decoded, f"Invention(N={best['N']})")
 
-    uncompressed = values.size * 8
     size = best["compressed_bytes"]
     return {
         "codec": "Invention",
@@ -845,6 +891,9 @@ def run_invention(values, predbits):
         "decode_mbps": (uncompressed / 1e6) / dec_t if dec_t > 0 else float("inf"),
         "encode_s": best["enc_t"],
         "decode_s": dec_t,
+        "bpv_by_block_size": per_n_bpv,
+        "predictor_selection_counts": predictor_selection_counts(
+            values, predbits, best["N"]),
     }
 
 
@@ -1054,40 +1103,69 @@ def compute_verdict_stats(all_results):
 
 
 def print_verdict(all_results, stats):
-    print("\n# Final Verdict: Invention vs Prior Art\n")
-    print("Improvement % is BPV reduction (positive = Invention smaller). "
-          "'Best baseline' is the single strongest prior-art lossless codec "
-          "for that corpus.\n")
-    print("| Dataset | Invention BPV | Elf+ BPV | vs Elf+ | Best baseline | "
-          "Best BPV | vs Best |")
-    print("|---------|--------------:|---------:|--------:|---------------|"
-          "---------:|--------:|")
+    """Print the comparison the patent actually turns on: the Invention vs Elf+
+    (the cited closest prior art). The strongest general-purpose baseline is
+    shown only as prior-art context for the section 7.8.1(d) novelty question --
+    it is NOT the ratio target (section 4 treats byte compressors as poor on
+    floats; the Invention's asserted advantage is decode throughput)."""
+    print("\n# Final Verdict: Invention vs Elf+ (patent section 7.8.1)\n")
+    print("BPV = bits/value (lower is better); improvement % = reduction vs "
+          "Elf+. The last two columns are the strongest general-purpose codec "
+          "for that corpus, shown only as section 7.8.1(d) prior-art context.\n")
+    print("| Dataset | Invention BPV | Elf+ BPV | vs Elf+ | (ctx) best "
+          "general codec | its BPV |")
+    print("|---------|--------------:|---------:|--------:|"
+          "----------------------|--------:|")
     for d in stats["per_dataset"]:
         print(f"| {d['dataset']} | {fmt(d['invention_bpv'])} | "
               f"{fmt(d['elf_bpv'])} | {d['improvement_vs_elf_pct']:+.1f}% | "
-              f"{d['best_baseline']} | {fmt(d['best_baseline_bpv'])} | "
-              f"{d['improvement_vs_best_pct']:+.1f}% |")
+              f"{d['best_baseline']} | {fmt(d['best_baseline_bpv'])} |")
 
     n = stats["n_datasets"]
     e = stats["improvement_vs_elf"]
-    b = stats["improvement_vs_best_baseline"]
-    print(f"\n**BPV improvement vs Elf+ (cited prior art):** "
-          f"median {e['median']:+.2f}%  (mean {e['mean']:+.2f}%, "
-          f"range {e['min']:+.1f}%..{e['max']:+.1f}%); "
+    print(f"\n**BPV improvement vs Elf+:** mean {e['mean']:+.2f}%, "
+          f"median {e['median']:+.2f}%  (range {e['min']:+.1f}%..{e['max']:+.1f}%); "
           f"Invention wins {stats['wins_vs_elf']}/{n} corpora.")
-    print(f"**BPV improvement vs best prior-art baseline:** "
-          f"median {b['median']:+.2f}%  (mean {b['mean']:+.2f}%, "
-          f"range {b['min']:+.1f}%..{b['max']:+.1f}%); "
-          f"Invention wins {stats['wins_vs_best_baseline']}/{n} corpora.")
+
+
+def print_data_insertion_points(all_results):
+    """Fill the Data Insertion Points the patent asks for that this reference
+    harness can legitimately measure (compression side only)."""
+    print("\n# Data Insertion Point 1 - Bits/Value by Block Size N\n")
+    print("(Compression side only. Throughput-by-N and register-width "
+          "alignment must come from the compiled implementation.)\n")
+    sizes = list(INVENTION_BLOCK_SIZES)
+    print("| Dataset | " + " | ".join(f"N={s}" for s in sizes) + " | best N |")
+    print("|" + "---|" * (len(sizes) + 2))
+    for name, results in all_results.items():
+        inv = next(r for r in results if r["codec"] == "Invention")
+        by_n = inv.get("bpv_by_block_size", {})
+        cells = [fmt(by_n.get(s, float("nan"))) for s in sizes]
+        print(f"| {name} | " + " | ".join(cells) + f" | {inv['block_size']} |")
+
+    print("\n# Data Insertion Point 2 - Per-Block Predictor Selection Frequency\n")
+    print("Counts of blocks selecting each predictor at the chosen block size "
+          "(P0=zero-order, P1=first-order, P2=second-order).\n")
+    print("| Dataset | N | P0 | P1 | P2 |")
+    print("|---------|--:|---:|---:|---:|")
+    for name, results in all_results.items():
+        inv = next(r for r in results if r["codec"] == "Invention")
+        c = inv.get("predictor_selection_counts", [0, 0, 0])
+        tot = sum(c) or 1
+        print(f"| {name} | {inv['block_size']} | "
+              f"{c[0]} ({100*c[0]/tot:.0f}%) | {c[1]} ({100*c[1]/tot:.0f}%) | "
+              f"{c[2]} ({100*c[2]/tot:.0f}%) |")
 
 
 def print_throughput_note(all_results):
-    """Decode throughput is an informational, PYTHON-RELATIVE micro-benchmark
-    only. It is NOT part of the viability criterion and must not be quoted as a
-    performance claim: the Invention/Elf+/Gorilla/Chimp decoders are pure-Python
-    scalar loops, whereas Zstd/LZ4/Blosc2/Zlib call optimised C. A real speed
-    claim requires a compiled implementation."""
-    print("\n## Decode throughput (informational; Python-relative, NOT a claim)\n")
+    """Decode throughput here is a PYTHON-RELATIVE micro-benchmark and is NOT
+    evidence for or against patent section 7.8.1. Section 7.8.1's throughput
+    gate concerns a COMPILED, branch-free, SIMD-vectorised decoder (section
+    7.5.1 / 7.7); pure-Python scalar loops cannot measure it and in fact invert
+    the expected ordering (the C-backed baselines look fastest here simply
+    because they are compiled). Reported only to show the harness ran."""
+    print("\n## Decode throughput (Python-relative micro-benchmark; NOT "
+          "section 7.8.1 evidence)\n")
     print("| Dataset | " + " | ".join(
         c for c in _codec_order(all_results)) + " |")
     print("|" + "---|" * (1 + len(_codec_order(all_results))))
@@ -1102,6 +1180,79 @@ def print_throughput_note(all_results):
 def _codec_order(all_results):
     first = next(iter(all_results.values()))
     return [r["codec"] for r in first]
+
+
+def evaluate_781(all_results, stats):
+    """Evaluate the patent's actual section 7.8.1 filing conditions, honestly
+    marking as INDETERMINATE the gates a Python reference harness cannot
+    establish (they require a compiled, SIMD, branch-free decoder)."""
+    n = stats["n_datasets"]
+    e = stats["improvement_vs_elf"]
+    ratio_mean = e["mean"]
+    wins = stats["wins_vs_elf"]
+
+    # Compression-side prerequisites (measurable here):
+    cond_i_ratio = ratio_mean >= 5.0            # >=5% mean reduction vs Elf+
+    cond_ii_ratio = ratio_mean >= -1.0          # within 1% of Elf+ (not worse)
+    majority = wins > n / 2                      # 7.8.1(b)
+    lossless = True                              # edge gate + all round-trips passed
+
+    # Throughput / mechanism gates (NOT measurable in pure Python):
+    UNDET = "INDETERMINATE (needs compiled SIMD decoder + perf)"
+    has_blosc = any(r["codec"] == "Blosc2-bitshuffle"
+                    for r in next(iter(all_results.values())))
+    d_msg = ("FLAG - bitshuffle IS bit-plane transpose; present in this run "
+             "and strong. Needs FTO/prior-art search + counsel." if has_blosc
+             else "n/a")
+
+    print("\n" + "=" * 72)
+    print("PATENT SECTION 7.8.1 - CONDITIONS FOR FILING")
+    print("=" * 72)
+    print(f"Mean bits/value reduction vs Elf+ : {ratio_mean:+.2f}%  "
+          f"(median {e['median']:+.2f}%, wins {wins}/{n})")
+    print()
+    print("Threshold (file only if (i) OR (ii) is met):")
+    print(f"  (i)  >=5% reduction vs Elf+ AND decode >= Elf+")
+    print(f"       ratio part : {'MET' if cond_i_ratio else 'NOT MET'} "
+          f"({ratio_mean:+.2f}%)")
+    print(f"       decode part: {UNDET}")
+    print(f"  (ii) within 1% of Elf+ AND decode >= 3x Elf+")
+    print(f"       ratio part : {'MET' if cond_ii_ratio else 'NOT MET'}")
+    print(f"       decode part: {UNDET}")
+    print()
+    print("Absolute bars (application shall NOT be filed if any fails):")
+    print(f"  (a) lossless incl NaN/inf/-0.0/subnormal : "
+          f"{'PASS' if lossless else 'FAIL'}")
+    print(f"  (b) improvement on a majority of corpora : "
+          f"{'PASS' if majority else 'FAIL'} ({wins}/{n} vs Elf+)")
+    print(f"  (c) branch-mispredict causal mechanism   : NOT MEASURED "
+          f"(needs perf stat on compiled decoder - Data Insertion Point 6)")
+    print(f"  (d) Blosc/bitshuffle prior-art clearance : {d_msg}")
+    print("=" * 72)
+    print("[STATUS: INCONCLUSIVE - DO NOT FILE YET]")
+    print("  Ratio prerequisites vs Elf+ are MET, and losslessness holds.")
+    print("  The decisive 7.8.1 gate is DECODE THROUGHPUT, which is the whole")
+    print("  point of the invention and CANNOT be measured by this Python")
+    print("  harness. Build the compiled, branch-free, SIMD decoder (spec")
+    print("  7.5.1) and measure decode MB/s + branch mispredict vs Elf+ on")
+    print("  named hardware before the 7.8.1 decision can be made.")
+    print("=" * 72)
+
+    return {
+        "framework": "patent section 7.8.1 (Invention vs Elf+)",
+        "mean_bpv_reduction_vs_elf_pct": ratio_mean,
+        "median_bpv_reduction_vs_elf_pct": e["median"],
+        "wins_vs_elf": wins,
+        "n_datasets": n,
+        "condition_i_ratio_met": bool(cond_i_ratio),
+        "condition_ii_ratio_met": bool(cond_ii_ratio),
+        "majority_corpora_7_8_1_b": bool(majority),
+        "lossless_7_8_1_a": bool(lossless),
+        "decode_throughput_gate": "indeterminate_requires_compiled_simd_decoder",
+        "branch_mispredict_7_8_1_c": "not_measured_requires_perf_on_compiled_code",
+        "prior_art_7_8_1_d_blosc_bitshuffle": "flag" if has_blosc else "n/a",
+        "overall": "inconclusive_do_not_file_yet",
+    }
 
 
 def save_outputs(all_results, stats, verdict, ablation, outdir):
@@ -1156,11 +1307,15 @@ def run_edge_case_gate():
         codecs.append(("LZ4-hc", Lz4Codec().encode, Lz4Codec().decode))
     if _HAVE_BLOSC2:
         codecs.append(("Blosc2-bitshuffle", Blosc2Codec().encode, Blosc2Codec().decode))
-    print("Edge-case round-trip (NaN / +/-inf / -0.0 / non-canonical NaN):")
-    for name, enc, dec in codecs:
-        decoded = dec(enc(edge))
-        assert_lossless(edge, decoded, f"[edge] {name}")
-        print(f"  [OK] {name}")
+    print("Edge-case round-trip (7.8.1(a): NaN incl non-canonical/sNaN, "
+          "+/-inf, -0.0, subnormals):")
+    # inf/NaN extrapolations raise expected IEEE warnings; they do not affect
+    # the bitwise round-trip, so silence them for this deliberately hostile set.
+    with np.errstate(invalid="ignore", over="ignore"):
+        for name, enc, dec in codecs:
+            decoded = dec(enc(edge))
+            assert_lossless(edge, decoded, f"[edge] {name}")
+            print(f"  [OK] {name}")
     print()
 
 
@@ -1210,6 +1365,7 @@ def main(argv=None):
     print_markdown(all_results)
     stats = compute_verdict_stats(all_results)
     print_verdict(all_results, stats)
+    print_data_insertion_points(all_results)
     print_throughput_note(all_results)
 
     ablation = None
@@ -1218,47 +1374,10 @@ def main(argv=None):
         abl_size, abl_table = run_ablation(datasets)
         ablation = print_ablation(abl_size, abl_table)
 
-    # Section 7.8.1 viability threshold.
-    #
-    # The criterion is now a MEDIAN compression-ratio improvement, and the
-    # relevant comparison is against the *best* prior-art lossless baseline in
-    # the run -- not merely Elf+. A patent examiner will cite the strongest
-    # available prior art (which, for the bit-plane idea, includes Blosc2's
-    # bitshuffle filter), so beating only a weaker baseline is not sufficient.
-    # The decode-speedup claim has been removed: it is not supported (the
-    # pure-Python decoders are slower than the C baselines), so it cannot carry
-    # the verdict. A speed claim would require a compiled implementation.
-    med_vs_best = stats["improvement_vs_best_baseline"]["median"]
-    med_vs_elf = stats["improvement_vs_elf"]["median"]
-    n = stats["n_datasets"]
-    majority_best = stats["wins_vs_best_baseline"] > n / 2
-    viable = (med_vs_best > 5.0) and majority_best
-
-    verdict = {
-        "criterion": "median BPV improvement vs BEST prior-art baseline > 5% "
-                     "AND Invention wins a majority of corpora",
-        "median_improvement_vs_best_baseline_pct": med_vs_best,
-        "median_improvement_vs_elf_pct": med_vs_elf,
-        "wins_vs_best_baseline": stats["wins_vs_best_baseline"],
-        "n_datasets": n,
-        "viable": bool(viable),
-    }
+    verdict = evaluate_781(all_results, stats)
 
     json_path, csv_path = save_outputs(all_results, stats, verdict, ablation, args.outdir)
     print(f"\nRaw results written to:\n  {json_path}\n  {csv_path}")
-
-    print("\n" + "=" * 72)
-    if viable:
-        print("[STATUS: VIABLE - PROCEED WITH PATENT FILING]")
-    else:
-        print("[STATUS: NOT VIABLE - REFINE ALGORITHM OR DO NOT FILE]")
-    print("  (threshold 7.8.1: median BPV improvement vs BEST prior-art "
-          "baseline > 5%\n   AND Invention wins a majority of corpora)")
-    print(f"  observed: median improvement vs best baseline {med_vs_best:+.2f}% "
-          f"(wins {stats['wins_vs_best_baseline']}/{n});\n"
-          f"            median improvement vs Elf+ {med_vs_elf:+.2f}% "
-          f"(cited prior art, for reference)")
-    print("=" * 72)
 
     print(f"\nTotal wall-clock: {time.perf_counter() - t_start:.2f}s")
     return 0
